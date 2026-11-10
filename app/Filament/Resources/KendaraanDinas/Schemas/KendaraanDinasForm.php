@@ -30,6 +30,13 @@ class KendaraanDinasForm
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
+                        TextInput::make('nomor_asset')
+                            ->label('Nomor Asset')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('Dibuat otomatis saat disimpan')
+                            ->helperText('Format: YYYY-mm-dd/KENDARAAN/0001. Tidak dapat diubah.'),
+
                         TextInput::make('nomor_polisi')
                             ->label('Nomor Polisi')
                             ->required()

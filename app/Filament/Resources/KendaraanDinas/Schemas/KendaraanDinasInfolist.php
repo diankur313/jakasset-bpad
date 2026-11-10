@@ -16,6 +16,7 @@ class KendaraanDinasInfolist
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
+                        TextEntry::make('nomor_asset')->label('Nomor Asset')->weight('bold')->copyable(),
                         TextEntry::make('nomor_polisi')->label('Nomor Polisi')->weight('bold'),
                         TextEntry::make('masterKendaraan.merek')->label('Merek'),
                         TextEntry::make('masterKendaraan.tipe_model')->label('Tipe / Model'),

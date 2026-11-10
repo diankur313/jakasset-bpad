@@ -14,6 +14,8 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 8. Menu Perangkat Daerah hanya untuk melihat data. Tambah/ubah/hapus data dilakukan di Master Data > Instansi Pemilik.
 9. Jalankan `php artisan test` setelah perubahan dan pastikan semua lolos.
 10. Repositori: https://github.com/diankur313/jakasset-bpad (branch `main`). Commit hanya bila diminta pemilik proyek; satu commit per tahap pekerjaan, pesan commit berbahasa Indonesia.
+11. Prompt yang diawali keterangan **"Added Value"** wajib dicatat juga di `ADDED_VALUE.md` sebagai entri baru (AV-xxx): prompt asli, penjelasan, spesifikasi yang diterapkan, file yang terlibat, dan verifikasi.
+12. Timezone aplikasi `Asia/Jakarta` (`APP_TIMEZONE`). Nomor asset dan tanggal lain mengikuti WIB.
 
 ## Log Pengerjaan
 
@@ -92,3 +94,22 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 3. Keduanya dipanggil dari `DatabaseSeeder` hanya saat `APP_ENV=local`, supaya data dummy tidak masuk ke production. Memakai `updateOrCreate`, jadi aman dijalankan berulang.
 4. `php artisan db:seed` dijalankan dua kali: Pegawai 10 baris, tidak ada data dobel. Master Kendaraan berisi 11 baris karena sudah ada 1 data sebelumnya (Toyota Innova Zenix 2.0 G, 2025) yang bukan dari seeder dan tidak diubah. `php artisan test`: 13 test lolos.
 5. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Added Value AV-001: Nomor Asset otomatis Kendaraan Dinas
+
+**Instruksi:**
+> Added Value:
+> Pada menu asset - kendaran dinas, tambahkan field nomor asset yang auto tergenerate untuk indentifikasi tiap kendaraan. kode ini bersifat unik dengan format YYYY-mm-dd/jenis asset (dalam hal ini kendaraan)/4 digit running number.
+>
+> Buat 1 file added value, isinya adalah penjelasan prompt yang gw awalin dengan keterangan added value. Masukin juga data di atas yang udah gw flag added value ke file added value yang baru.
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. `app/Support/NomorAsset.php`: generator `YYYY-mm-dd/JENIS/0001`. Running number per jenis asset per tanggal, disimpan di tabel `nomor_asset_sequences`, dinaikkan secara atomik, dan tidak dipakai ulang.
+2. Migration `2026_11_10_100004`: kolom `kendaraan_dinas.nomor_asset` (unik) dan tabel `nomor_asset_sequences`, lalu mengisi nomor asset untuk data lama berdasarkan `created_at`.
+3. `KendaraanDinas`: konstanta `JENIS_ASSET = 'KENDARAAN'`, hook `creating` membuat nomor asset, hook `updating` mencegah nomor diubah. `nomor_asset` tidak masuk `$fillable`.
+4. Filament: field Nomor Asset terkunci di form, tampil di detail, menjadi kolom pertama tabel (juga di detail Perangkat Daerah), dan bisa dicari lewat pencarian global.
+5. Timezone aplikasi diubah dari UTC ke `Asia/Jakarta` (`config/app.php` membaca `APP_TIMEZONE`), supaya tanggal di nomor asset sesuai WIB.
+6. Membuat `ADDED_VALUE.md` berisi entri AV-001 (prompt asli, penjelasan, spesifikasi, file, verifikasi).
+7. 3 test baru di `AssetCrudTest`. `php artisan test`: 16 test lolos. Dicek di browser: kolom dan field terkunci tampil benar. Data dan counter yang dipakai untuk pengecekan sudah dihapus lagi.
+8. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.

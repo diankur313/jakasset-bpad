@@ -19,6 +19,7 @@ class KendaraanDinasTable
     public static function columns(bool $withInstansi = true): array
     {
         return array_values(array_filter([
+            TextColumn::make('nomor_asset')->label('Nomor Asset')->searchable()->sortable()->copyable()->fontFamily('mono')->size('sm'),
             TextColumn::make('nomor_polisi')->label('Nomor Polisi')->searchable()->sortable()->weight('bold'),
             TextColumn::make('masterKendaraan.merek')->label('Merek')->searchable()->sortable(),
             TextColumn::make('masterKendaraan.tipe_model')->label('Tipe / Model')->searchable(),

@@ -20,6 +20,7 @@ use App\Models\MasterKendaraan;
 use App\Models\Pegawai;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
+use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -151,6 +152,7 @@ class AssetCrudTest extends TestCase
         $k = KendaraanDinas::firstOrFail();
         $this->assertSame('B 9999 XY', $k->nomor_polisi);
         $this->assertSame($m->id, $k->master_kendaraan_id);
+        $this->assertMatchesRegularExpression('#^\d{4}-\d{2}-\d{2}/KENDARAAN/\d{4}$#', $k->nomor_asset);
 
         // Halaman edit memuat ulang Merek & Tipe dari relasi master.
         Livewire::test(EditKendaraanDinas::class, ['record' => $k->getRouteKey()])
@@ -222,6 +224,59 @@ class AssetCrudTest extends TestCase
             ->callAction(TestAction::make('delete')->table($k));
 
         $this->assertModelMissing($k);
+    }
+
+    public function test_nomor_asset_otomatis_berurutan_per_hari(): void
+    {
+        $m = $this->master();
+        $i = $this->instansi();
+
+        Carbon::setTestNow(Carbon::parse('2026-11-10 09:00', 'Asia/Jakarta'));
+        $a = $this->kendaraan($m, $i, nopol: 'B 1 AA');
+        $b = $this->kendaraan($m, $i, nopol: 'B 2 AA');
+
+        $this->assertSame('2026-11-10/KENDARAAN/0001', $a->nomor_asset);
+        $this->assertSame('2026-11-10/KENDARAAN/0002', $b->nomor_asset);
+
+        // Nomor yang sudah terpakai tidak dipakai ulang walaupun datanya dihapus.
+        $b->delete();
+        $this->assertSame('2026-11-10/KENDARAAN/0003', $this->kendaraan($m, $i, nopol: 'B 3 AA')->nomor_asset);
+
+        // Hari berikutnya mulai lagi dari 0001.
+        Carbon::setTestNow(Carbon::parse('2026-11-11 08:00', 'Asia/Jakarta'));
+        $this->assertSame('2026-11-11/KENDARAAN/0001', $this->kendaraan($m, $i, nopol: 'B 4 AA')->nomor_asset);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_tanggal_nomor_asset_memakai_waktu_jakarta(): void
+    {
+        // 23:30 UTC tanggal 10 = 06:30 WIB tanggal 11.
+        Carbon::setTestNow(Carbon::parse('2026-11-10 23:30', 'UTC'));
+
+        $k = $this->kendaraan($this->master(), $this->instansi());
+
+        $this->assertSame('2026-11-11/KENDARAAN/0001', $k->nomor_asset);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_nomor_asset_tidak_bisa_diubah(): void
+    {
+        $k = $this->kendaraan($this->master(), $this->instansi());
+        $asli = $k->nomor_asset;
+
+        $k->nomor_asset = '2000-01-01/KENDARAAN/9999';
+        $k->save();
+        $this->assertSame($asli, $k->fresh()->nomor_asset);
+
+        $k->update(['nomor_asset' => 'X', 'warna' => 'Merah']);
+        $this->assertSame($asli, $k->fresh()->nomor_asset);
+        $this->assertSame('Merah', $k->fresh()->warna);
+
+        Livewire::test(EditKendaraanDinas::class, ['record' => $k->getRouteKey()])
+            ->assertSchemaStateSet(['nomor_asset' => $asli])
+            ->assertFormFieldDisabled('nomor_asset');
     }
 
     public function test_perangkat_daerah_hanya_lihat(): void

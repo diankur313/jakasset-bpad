@@ -59,6 +59,11 @@ class KendaraanDinasResource extends Resource
         return KendaraanDinasTable::configure($table);
     }
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['nomor_polisi', 'nomor_asset'];
+    }
+
     public static function getPages(): array
     {
         return [
