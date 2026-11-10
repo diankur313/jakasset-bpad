@@ -29,6 +29,9 @@ Aplikasi panel admin berbasis **Laravel + Filament**.
 | Livewire        | 4.4.8     | Dependensi Filament           |
 | Composer        | 2.7.7     | Package manager PHP           |
 | PHPUnit         | 12.5.43   | Testing                       |
+| endroid/qr-code | 6.0.9     | Membuat QR code label aset (AV-003) |
+| barryvdh/laravel-dompdf | 3.1.2 (dompdf 3.1.6) | Membuat PDF label aset (AV-003) |
+| khanamiryan/qrcode-detector-decoder | 2.x (dev) | Membaca QR di test, memastikan QR berlogo terbaca |
 
 ### Frontend / Build
 | Komponen            | Versi   |
@@ -116,6 +119,12 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 - Tanggal = tanggal pencatatan (WIB). Running number 4 digit dihitung per jenis asset per tanggal (mulai `0001` tiap hari) dan tidak dipakai ulang walaupun datanya dihapus.
 - Generator: `app/Support/NomorAsset.php`, penghitung di tabel `nomor_asset_sequences`. Detail lengkap di [`ADDED_VALUE.md`](ADDED_VALUE.md).
 
+### Label QR Kendaraan Dinas (Added Value AV-003)
+- **Satuan:** tombol **Label** di tiap baris tabel / **Download Label** di halaman detail → PDF 90 × 45 mm.
+- **Batch:** centang beberapa / semua baris → tombol **Download Label** di atas tabel → PDF A4, 10 label per halaman dengan garis potong.
+- Isi label: QR berisi Nomor Asset dengan logo BPAD di tengah, lalu Merek, Tipe / Model, Tahun Produksi, Nomor Polisi, dan Nomor Asset.
+- Kode: `app/Support/LabelAsset.php`, view `resources/views/pdf/`, logo `resources/images/logo-bpad.png`. Detail di [`ADDED_VALUE.md`](ADDED_VALUE.md).
+
 ### Penghapusan data & dependensi
 Semua tombol hapus memakai `app/Filament/Support/DependencyGuard.php`:
 - **Hapus satu data:** jika data masih dipakai, modal berubah menjadi alert **"Data tidak dapat dihapus"** berisi jumlah dan contoh nomor polisi yang memakai data itu, dan tombol hapus disembunyikan. Jika tidak dipakai, muncul konfirmasi hapus biasa.
@@ -179,6 +188,7 @@ app/
 │   │   └── PerangkatDaerah/                # read-only, model Instansi
 │   └── Support/DependencyGuard.php         # aksi hapus + cek dependensi
 ├── Support/NomorAsset.php                  # generator nomor asset (AV-001)
+├── Support/LabelAsset.php                  # QR + PDF label aset (AV-003)
 ├── Models/                                 # User, Instansi, MasterKendaraan, WarnaKendaraan, Pegawai, KendaraanDinas
 └── Providers/Filament/AdminPanelProvider.php
 database/
@@ -236,3 +246,4 @@ php artisan test
 | 2026-11-10 | Menu Master Data > Warna Kendaraan dihapus; warna diatur lewat field **Warna Tersedia** di form Master Data > Kendaraan (pivot `master_kendaraan_warna`). Warna di Kendaraan Dinas dibatasi ke Warna Tersedia master. Total 20 test. | Claude Code (Opus 5.5) |
 | 2026-11-10 | Relasi Pegawai → Instansi (`pegawai.instansi_id`, wajib di form). Pemegang di Kendaraan Dinas wajib dan dibatasi ke pegawai perangkat daerah pemilik. Hapus instansi dicek terhadap pegawai. Detail Perangkat Daerah menampilkan pegawai. Total 25 test. | Claude Code (Opus 5.5) |
 | 2026-11-10 | Kolom `kondisi` & `status` dihapus dari `kendaraan_dinas`; nilainya selalu dibaca dari Master Kendaraan dan tampil terkunci di form (AV-002 Revisi 1). Total 26 test. | Claude Code (Opus 5.5) |
+| 2026-11-10 | **Added Value AV-003:** download label QR Kendaraan Dinas (satuan PDF 90×45 mm & batch A4). Package baru `endroid/qr-code` 6.0.9, `barryvdh/laravel-dompdf` 3.1.2; dev `khanamiryan/qrcode-detector-decoder`. Logo `resources/images/logo-bpad.png`. Total 29 test. | Claude Code (Opus 5.5) |

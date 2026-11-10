@@ -494,6 +494,56 @@ class AssetCrudTest extends TestCase
         $this->assertSame(0, KendaraanDinas::count());
     }
 
+    public function test_qr_label_berisi_nomor_asset_dan_tetap_terbaca_dengan_logo(): void
+    {
+        $uri = \App\Support\LabelAsset::qrDataUri('2026-11-10/KENDARAAN/0001');
+        $file = tempnam(sys_get_temp_dir(), 'qr');
+        file_put_contents($file, base64_decode(substr($uri, strpos($uri, ',') + 1)));
+
+        $this->assertSame('2026-11-10/KENDARAAN/0001', (new \Zxing\QrReader($file, \Zxing\QrReader::SOURCE_TYPE_FILE, false))->text());
+
+        unlink($file);
+    }
+
+    public function test_download_label_satu_kendaraan(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-10 09:00', 'Asia/Jakarta'));
+        $k = $this->kendaraan($this->master(), $this->instansi(), $this->pegawai());
+
+        Livewire::test(ListKendaraanDinas::class)
+            ->callAction(TestAction::make('downloadLabel')->table($k))
+            ->assertFileDownloaded('label-2026-11-10-kendaraan-0001.pdf');
+
+        $pdf = \App\Support\LabelAsset::download(collect([$k]));
+        ob_start();
+        $pdf->sendContent();
+        $isi = ob_get_clean();
+        $this->assertStringStartsWith('%PDF', $isi);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_download_label_batch_dari_centang(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-10 09:30:00', 'Asia/Jakarta'));
+        $m = $this->master();
+        $i = $this->instansi();
+        $semua = collect(range(1, 11))->map(fn (int $n) => $this->kendaraan($m, $i, nopol: "B {$n} LBL"));
+
+        Livewire::test(ListKendaraanDinas::class)
+            ->selectTableRecords($semua)
+            ->callAction(TestAction::make('downloadLabelBatch')->table()->bulk())
+            ->assertFileDownloaded('label-kendaraan-dinas-20261110-093000.pdf');
+
+        // 11 label = 2 halaman A4 (10 label per halaman).
+        $response = \App\Support\LabelAsset::download($semua);
+        ob_start();
+        $response->sendContent();
+        $this->assertSame(2, preg_match_all('#/Type\s*/Page[^s]#', ob_get_clean()));
+
+        Carbon::setTestNow();
+    }
+
     public function test_perangkat_daerah_hanya_lihat(): void
     {
         $i = $this->instansi();

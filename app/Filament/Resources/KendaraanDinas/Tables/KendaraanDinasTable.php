@@ -4,6 +4,7 @@ namespace App\Filament\Resources\KendaraanDinas\Tables;
 
 use App\Enums\KondisiKendaraan;
 use App\Enums\StatusKendaraan;
+use App\Filament\Resources\KendaraanDinas\Actions\DownloadLabelAction;
 use App\Filament\Resources\KendaraanDinas\KendaraanDinasResource;
 use App\Filament\Support\DependencyGuard;
 use Filament\Actions\BulkActionGroup;
@@ -66,11 +67,14 @@ class KendaraanDinasTable
                     )),
             ])
             ->recordActions([
+                DownloadLabelAction::make(),
                 ViewAction::make(),
                 EditAction::make(),
                 DependencyGuard::deleteAction(KendaraanDinasResource::DEPENDENCIES),
             ])
             ->toolbarActions([
+                // Centang beberapa / semua baris lalu klik "Download Label".
+                DownloadLabelAction::bulk(),
                 BulkActionGroup::make([
                     DependencyGuard::deleteBulkAction(KendaraanDinasResource::DEPENDENCIES, 'nomor_polisi'),
                 ]),

@@ -203,3 +203,19 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 5. Test: helper & test berjenjang disesuaikan, 1 test baru (field terkunci, kolom tidak ada, perubahan master tercermin, filter lewat master). `php artisan test`: 26 test lolos. Dicek di browser.
 6. Field Status tercatat sebagai AV-002, jadi `ADDED_VALUE.md` diperbarui dengan "Revisi 1".
 7. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Added Value AV-003: Download label QR Kendaraan Dinas
+
+**Instruksi:**
+> Di menu http://localhost:8000/admin/asset/kendaraan-dinas tambahin action download label per data, kemudian sistem mengeksport label yang berisikan QR code yang berasal dari ID asset yang di-encode ke bentuk QR. Untuk style-nya di tengah QR ada logo BPAD (terlampir), kemudian di samping QR ada keterangan merek dan jenis mobil, kemudian tahun pembelian. Berikan fungsi juga untuk batch download berbentuk ceklis all. Tulis fitur ini sebagai added value. (dengan lampiran logo BPAD)
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Dikonfirmasi ke pemilik proyek: label memakai **Tahun Produksi** (belum ada data tahun pembelian), format **PDF siap cetak**.
+2. Package baru: `endroid/qr-code` 6.0.9 (QR + logo), `barryvdh/laravel-dompdf` 3.1.2 (PDF); dev: `khanamiryan/qrcode-detector-decoder` 2.x (membaca QR di test).
+3. Logo terlampir disimpan di `resources/images/logo-bpad.png`.
+4. `app/Support/LabelAsset.php` + view `resources/views/pdf/`: QR berisi Nomor Asset (ECC High, logo di tengah), teks Merek / Tipe / Tahun Produksi / No. Polisi / Nomor Asset. Satuan: PDF 90 × 45 mm. Batch: PDF A4, 10 label per halaman, garis potong. Font subsetting aktif (±35 KB per label).
+5. Filament: tombol **Label** per baris tabel, **Download Label** di halaman detail, dan bulk action **Download Label** untuk baris yang dicentang (termasuk centang semua).
+6. 3 test baru (QR berlogo terbaca, download satuan, batch 11 data = 2 halaman). `php artisan test`: 29 test lolos. PDF dicek visual; tombol batch dicek di browser.
+7. Bug yang ditemukan saat test dan sudah diperbaiki: download satuan error karena `collect([$record])` bukan koleksi Eloquent.
+8. Dicatat sebagai AV-003 di `ADDED_VALUE.md`. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.

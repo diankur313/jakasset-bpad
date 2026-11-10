@@ -12,6 +12,7 @@ Aturan: setiap prompt baru yang diawali "Added Value" wajib ditambahkan ke file 
 |------|---------|------|-------|
 | AV-001 | 2026-11-10 | Asset > Kendaraan Dinas | Nomor Asset otomatis |
 | AV-002 | 2026-11-10 | Master Data > Kendaraan, Asset > Kendaraan Dinas | Field Status (Active, Inactive, Standby) |
+| AV-003 | 2026-11-10 | Asset > Kendaraan Dinas | Download label QR code (satuan & batch) |
 
 ---
 
@@ -153,3 +154,53 @@ Fitur sudah diuji sejak tahap menu CRUD: `php artisan test` lolos 16 test, terma
 - Akibatnya: mengubah Kondisi/Status di Master Kendaraan langsung berlaku untuk semua kendaraan dinas bertipe itu.
 
 **Verifikasi:** `php artisan test`: 26 test lolos, termasuk test baru `test_kondisi_status_kendaraan_dinas_tidak_bisa_dipilih_dan_mengikuti_master`. Dicek di browser pada form ubah kendaraan dinas.
+
+---
+
+## AV-003 — Download Label QR Code Kendaraan Dinas
+
+**Tanggal:** 2026-11-10
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+### Prompt asli
+
+> Di menu http://localhost:8000/admin/asset/kendaraan-dinas tambahin action download label per data, kemudian sistem mengeksport label yang berisikan QR code yang berasal dari ID asset yang di-encode ke bentuk QR. Untuk style-nya di tengah QR ada logo BPAD (terlampir), kemudian di samping QR ada keterangan merek dan jenis mobil, kemudian tahun pembelian. Berikan fungsi juga untuk batch download berbentuk ceklis all.
+> Tulis fitur ini sebagai added value.
+
+### Penjelasan prompt
+
+Setiap kendaraan dinas perlu **label fisik** yang bisa dicetak dan ditempel di kendaraan. Label memuat **QR code** berisi ID asset, sehingga petugas cukup memindai QR untuk mengenali kendaraan. Label bisa diunduh **per kendaraan**, atau **sekaligus banyak** dengan mencentang data (termasuk centang semua).
+
+Keputusan yang dikonfirmasi ke pemilik proyek saat pengerjaan:
+- **Tahun di label:** data belum punya "tahun pembelian", jadi label memakai **Tahun Produksi** dari Master Kendaraan dan diberi judul "Tahun Produksi". Tidak ada field baru.
+- **Format file:** **PDF siap cetak**.
+
+### Spesifikasi yang diterapkan
+
+1. **Isi QR:** Nomor Asset (ID asset, contoh `2026-11-10/KENDARAAN/0001`).
+2. **Logo BPAD di tengah QR:** file `resources/images/logo-bpad.png` (logo terlampir). QR memakai error correction level **High** (bisa memulihkan ±30% data) dan modul QR di belakang logo dikosongkan, jadi QR tetap terbaca. Sudah diuji: QR berlogo berhasil dibaca kembali menjadi nomor asset yang benar.
+3. **Teks di samping QR:** judul "Kendaraan Dinas · BPAD", **Merek** (besar), **Tipe / Model** (jenis mobil), **Tahun Produksi**, ditambah Nomor Polisi dan Nomor Asset dalam huruf kecil agar label tetap bisa dibaca tanpa memindai.
+4. **Download satuan:** tombol **Label** (ikon QR) di setiap baris tabel Kendaraan Dinas, dan tombol **Download Label** di halaman detail. Hasil: PDF berukuran 1 label **90 × 45 mm**, nama file `label-2026-11-10-kendaraan-0001.pdf`.
+5. **Download batch:** centang beberapa baris atau centang semua (checkbox di header tabel), lalu klik tombol **Download Label** yang muncul di atas tabel. Hasil: PDF **A4** berisi **10 label per halaman** (2 kolom × 5 baris) dengan garis potong putus-putus, nama file `label-kendaraan-dinas-YYYYMMDD-HHMMSS.pdf`.
+6. **Ukuran file kecil:** hanya huruf yang dipakai yang ditanam ke PDF (±35 KB untuk 1 label, ±105 KB untuk 6 label).
+
+### File yang terlibat
+
+| File | Peran |
+|------|-------|
+| `app/Support/LabelAsset.php` | Membuat QR berlogo dan PDF label (satuan / lembar A4) |
+| `resources/views/pdf/label-kendaraan.blade.php` | Layout PDF (ukuran label, grid A4, garis potong) |
+| `resources/views/pdf/partials/label-kendaraan-isi.blade.php` | Isi satu label (QR + teks) |
+| `resources/images/logo-bpad.png` | Logo BPAD di tengah QR |
+| `app/Filament/Resources/KendaraanDinas/Actions/DownloadLabelAction.php` | Aksi download satuan & batch |
+| `app/Filament/Resources/KendaraanDinas/Tables/KendaraanDinasTable.php` | Tombol Label per baris & Download Label untuk data tercentang |
+| `app/Filament/Resources/KendaraanDinas/Pages/ViewKendaraanDinas.php` | Tombol Download Label di halaman detail |
+| `composer.json` | Package baru: `endroid/qr-code`, `barryvdh/laravel-dompdf`; dev: `khanamiryan/qrcode-detector-decoder` |
+| `tests/Feature/AssetCrudTest.php` | 3 test baru |
+
+### Verifikasi
+
+- `php artisan test`: 29 test lolos, termasuk 3 test baru: QR berlogo terbaca kembali sebagai nomor asset, download satuan menghasilkan PDF dengan nama file yang benar, dan download batch 11 kendaraan menghasilkan PDF 2 halaman.
+- PDF dicek secara visual (dirender ke gambar): layout QR + logo + teks sesuai, 90 × 45 mm, lembar A4 rapi.
+- Browser: centang semua di tabel Kendaraan Dinas memunculkan tombol Download Label, dan klik tombol mengirim PDF tanpa error.
+- Saat test ditemukan dan diperbaiki 1 bug: download satuan error karena data dikirim sebagai koleksi biasa, bukan koleksi Eloquent.
