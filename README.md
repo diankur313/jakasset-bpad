@@ -126,7 +126,16 @@ kendaraan_dinas    id, nomor_polisi (unik), master_kendaraan_id → master_kenda
                    semua foreign key: ON DELETE RESTRICT
 ```
 
-Seeder `InstansiSeeder` mengisi contoh: Dinas Pendidikan, Dinas Kesehatan, Dinas Pekerjaan Umum dan Penataan Ruang (PUPR).
+### Seeder
+
+| Seeder | Isi | Kapan dijalankan |
+|--------|-----|------------------|
+| `AdminUserSeeder` | Akun admin dari `ADMIN_*` di `.env` | Selalu |
+| `InstansiSeeder` | Dinas Pendidikan, Dinas Kesehatan, Dinas Pekerjaan Umum dan Penataan Ruang (PUPR) | Selalu |
+| `PegawaiSeeder` | 10 pegawai dummy (NIP 18 digit, golongan II/a s.d. IV/b) | Hanya `APP_ENV=local` |
+| `MasterKendaraanSeeder` | 10 master kendaraan dummy (Toyota, Mitsubishi, Suzuki, Daihatsu, Isuzu, Honda) dengan kondisi & status bervariasi | Hanya `APP_ENV=local` |
+
+Semua seeder memakai `updateOrCreate` / `firstOrCreate`, jadi aman dijalankan berulang (`php artisan db:seed`). Data dummy master kendaraan sengaja memuat merek dengan beberapa tipe dan satu tipe dengan dua tahun (Toyota Avanza 2019 & 2022) untuk mencoba dropdown berjenjang di Kendaraan Dinas.
 
 ## 6. Struktur Penting
 
@@ -149,7 +158,9 @@ database/
 └── seeders/
     ├── DatabaseSeeder.php
     ├── AdminUserSeeder.php
-    └── InstansiSeeder.php
+    ├── InstansiSeeder.php
+    ├── PegawaiSeeder.php                   # dummy, hanya local
+    └── MasterKendaraanSeeder.php           # dummy, hanya local
 tests/Feature/AssetCrudTest.php             # test CRUD & alert hapus
 .claude/launch.json                         # konfigurasi dev server untuk Claude Code
 AGENTS.md                                   # log instruksi & pengerjaan
@@ -186,3 +197,4 @@ php artisan test
 | 2026-11-10 | Inisialisasi proyek: Laravel 13.40.0, Filament 5.11.2, SQLite, panel `admin`, seeder akun admin, locale `id`. | Claude Code (Opus 5.5) |
 | 2026-11-10 | Menu CRUD: Asset > Kendaraan Dinas, Pegawai, Master Data > Kendaraan & Instansi Pemilik; menu Perangkat Daerah (read-only). 4 tabel baru dengan FK `restrictOnDelete`, enum Kondisi/Status, `DependencyGuard` (alert hapus berdependensi), `InstansiSeeder`, 11 feature test. | Claude Code (Opus 5.5) |
 | 2026-11-10 | Inisialisasi git (branch `main`) dan push ke GitHub `diankur313/jakasset-bpad`. History disusun per tahap pengerjaan. | Claude Code (Opus 5.5) |
+| 2026-11-10 | Data dummy: `PegawaiSeeder` (10 pegawai) dan `MasterKendaraanSeeder` (10 master kendaraan), dipanggil dari `DatabaseSeeder` hanya saat `APP_ENV=local`. | Claude Code (Opus 5.5) |

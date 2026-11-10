@@ -18,5 +18,13 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             InstansiSeeder::class,
         ]);
+
+        // Data dummy hanya untuk pengembangan lokal.
+        if (app()->environment('local')) {
+            $this->call([
+                PegawaiSeeder::class,
+                MasterKendaraanSeeder::class,
+            ]);
+        }
     }
 }

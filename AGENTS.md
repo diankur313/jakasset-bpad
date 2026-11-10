@@ -79,3 +79,16 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
    - Commit 2, menu CRUD: semua file dari tahap kedua.
    - Commit 3: catatan repositori di `AGENTS.md` dan `README.md`.
 3. Remote `origin` = `https://github.com/diankur313/jakasset-bpad.git`, lalu push branch `main`.
+
+### 2026-11-10 — Data dummy Pegawai dan Master Kendaraan
+
+**Instruksi:**
+> Buat data dummy 10 untuk pegawai dan master data - kendaraan.
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. `database/seeders/PegawaiSeeder.php`: 10 pegawai dengan nama, NIP 18 digit (format tanggal lahir + TMT + jenis kelamin + nomor urut), jabatan, dan golongan yang sesuai jabatannya.
+2. `database/seeders/MasterKendaraanSeeder.php`: 10 master kendaraan dinas yang umum (Innova Zenix, Avanza 2019 & 2022, Hilux, Pajero Sport, Xpander, Ertiga, Gran Max, Elf ambulans, Vario 125) dengan kondisi dan status bervariasi.
+3. Keduanya dipanggil dari `DatabaseSeeder` hanya saat `APP_ENV=local`, supaya data dummy tidak masuk ke production. Memakai `updateOrCreate`, jadi aman dijalankan berulang.
+4. `php artisan db:seed` dijalankan dua kali: Pegawai 10 baris, tidak ada data dobel. Master Kendaraan berisi 11 baris karena sudah ada 1 data sebelumnya (Toyota Innova Zenix 2.0 G, 2025) yang bukan dari seeder dan tidak diubah. `php artisan test`: 13 test lolos.
+5. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
