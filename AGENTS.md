@@ -244,3 +244,26 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 6. Semua respons `/api` JSON (middleware `PaksaResponsJson`), pesan error 401/404/405/422/429 berbahasa Indonesia.
 7. `tests/Feature/ApiTest.php`: 11 test. Suite penuh sempat kehabisan memori (128 MB) karena render PDF dompdf di banyak test, jadi `phpunit.xml` diberi `memory_limit=512M`. `php artisan test`: 40 test lolos. Dicek juga di server lokal: login, daftar kendaraan dinas, label PDF, logout, dan 401.
 8. Dokumentasi: `API.md` (baru), `README.md`. Bukan prompt "Added Value", jadi tidak dicatat di `ADDED_VALUE.md`. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Bantuan pengujian API di Insomnia
+
+**Instruksi:**
+> Pertanyaan cara memanggil login dan GET kendaraan dinas di Insomnia, lalu error 401 padahal sudah login (dengan screenshot).
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Diberikan URL lengkap login dan GET kendaraan dinas beserta header dan body.
+2. Penyebab 401: request GET mengirim email & password di Body (multipart) dan tab Auth kosong, sehingga token tidak terkirim. Token di database tercatat belum pernah dipakai. Solusi: Body dikosongkan, token diisi di Auth > Bearer Token (bisa otomatis lewat tag Response > Body Attribute `$.token`). Tidak ada perubahan kode.
+
+### 2026-11-10 — Dasbor dengan data real
+
+**Instruksi:**
+> Sesuaikan tampilan menu dashboard-nya dengan data real.
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Widget baru di `app/Filament/Widgets/`: `StatistikAsset` (6 kartu ringkasan + tren 6 bulan), `KondisiKendaraanChart` & `StatusKendaraanChart` (donut, nilai dari Master Kendaraan), `KendaraanPerPerangkatDaerahChart` (batang kendaraan & pegawai per perangkat daerah), `KendaraanDinasTerbaru` (tabel 5 data terakhir).
+2. `AdminPanelProvider`: `FilamentInfoWidget` dihapus, `AccountWidget` tetap.
+3. Cek di browser: angka sesuai database (6 kendaraan, 5 active, 1 rusak ringan, 10 pegawai, 3 perangkat daerah, 11 master). Tabel terbaru sempat terpotong ke samping, jadi perangkat daerah ditampilkan sebagai singkatan (nama lengkap di tooltip) dan kolom panjang dibuat wrap.
+4. `tests/Feature/DashboardTest.php`: 4 test. `php artisan test`: 44 test lolos.
+5. Di-commit dan di-push ke `main` atas permintaan pemilik proyek, bersama folder `SS/` (screenshot dari pemilik proyek) dan perubahan format `API.md` oleh pemilik proyek. Pemilik proyek sudah diberi tahu bahwa 2 screenshot Insomnia di `SS/` memuat password admin & token API dan repo bersifat publik; atas pilihannya semua di-commit apa adanya.

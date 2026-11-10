@@ -86,11 +86,25 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 
 | Menu | URL | Fungsi | Keterangan |
 |------|-----|--------|------------|
+| Dasbor | `/admin` | Ringkasan | Data real dari database (lihat bagian Dasbor di bawah) |
 | Pegawai | `/admin/pegawai` | CRUD | Form: Nama, NIP (18 digit, unik), Jabatan, Golongan (I/a s.d. IV/e), **Instansi** (wajib) |
 | Perangkat Daerah | `/admin/perangkat-daerah` | **Hanya lihat** | Sumber data: Master Data > Instansi Pemilik. Halaman detail menampilkan daftar kendaraan dinas dan pegawai perangkat daerah tersebut. |
 | **Asset** > Kendaraan Dinas | `/admin/asset/kendaraan-dinas` | CRUD (data transaksi) | Nomor Asset dibuat otomatis di backend (tidak ada di form). Form: Nomor Polisi, Merek, Tipe / Model, Tahun Produksi, Warna Kendaraan (dari Warna Tersedia master), Kondisi & Status (terkunci, mengikuti master), Perangkat Daerah (pemilik), Pemegang (pegawai, wajib) |
 | **Master Data** > Kendaraan | `/admin/master-data/kendaraan` | CRUD | Form: Merek, Tipe / Model, Tahun Produksi, Kondisi, Status, **Warna Tersedia** (pilih banyak; tombol + untuk menambah warna baru). Kombinasi Merek + Tipe + Tahun harus unik. |
 | **Master Data** > Instansi Pemilik | `/admin/master-data/instansi` | CRUD | Form: Nama Instansi (unik), Singkatan, Alamat |
+
+### Dasbor
+Widget di `app/Filament/Widgets/`, semua angka dihitung langsung dari database setiap halaman dibuka:
+
+| Widget | Isi |
+|--------|-----|
+| `StatistikAsset` | 6 kartu: Total Kendaraan Dinas (+ ditambahkan bulan ini & grafik tren 6 bulan), Kendaraan Active (% dari total), Perlu Perbaikan (rusak ringan + rusak berat), Pegawai (+ jumlah pemegang kendaraan), Perangkat Daerah (+ yang punya kendaraan), Master Kendaraan (+ jumlah merek). Kartu bisa diklik ke menu terkait. |
+| `KondisiKendaraanChart` | Donut komposisi kondisi kendaraan dinas (dari Master Kendaraan) |
+| `StatusKendaraanChart` | Donut komposisi status kendaraan dinas (dari Master Kendaraan) |
+| `KendaraanPerPerangkatDaerahChart` | Grafik batang jumlah kendaraan dinas & pegawai per perangkat daerah |
+| `KendaraanDinasTerbaru` | Tabel 5 kendaraan dinas terakhir ditambahkan, baris bisa diklik ke detail |
+
+Widget bawaan `FilamentInfoWidget` (info/iklan Filament) dihapus; `AccountWidget` (salam & tombol keluar) tetap.
 
 ### Pilihan (enum)
 | Field | Pilihan | File |
@@ -191,6 +205,7 @@ Semua seeder memakai `updateOrCreate` / `firstOrCreate`, jadi aman dijalankan be
 app/
 ├── Enums/                                  # KondisiKendaraan, StatusKendaraan
 ├── Filament/
+│   ├── Widgets/                            # widget Dasbor (statistik, grafik, tabel terbaru)
 │   ├── Resources/
 │   │   ├── KendaraanDinas/                 # Asset > Kendaraan Dinas
 │   │   ├── Pegawai/
@@ -220,6 +235,7 @@ database/
 routes/api.php                              # route REST API
 tests/Feature/AssetCrudTest.php             # test CRUD & alert hapus
 tests/Feature/ApiTest.php                   # test REST API
+tests/Feature/DashboardTest.php             # test widget Dasbor
 .claude/launch.json                         # konfigurasi dev server untuk Claude Code
 AGENTS.md                                   # log instruksi & pengerjaan
 ADDED_VALUE.md                              # catatan fitur Added Value
@@ -267,3 +283,4 @@ php artisan test
 | 2026-11-10 | Kolom `kondisi` & `status` dihapus dari `kendaraan_dinas`; nilainya selalu dibaca dari Master Kendaraan dan tampil terkunci di form (AV-002 Revisi 1). Total 26 test. | Claude Code (Opus 5.5) |
 | 2026-11-10 | **Added Value AV-003:** download label QR Kendaraan Dinas (satuan PDF 90×45 mm & batch A4). Package baru `endroid/qr-code` 6.0.9, `barryvdh/laravel-dompdf` 3.1.2; dev `khanamiryan/qrcode-detector-decoder`. Logo `resources/images/logo-bpad.png`. Total 29 test. | Claude Code (Opus 5.5) |
 | 2026-11-10 | REST API untuk semua fungsi di `/api/v1` (36 endpoint) dengan `laravel/sanctum` 4.3.3 (token Bearer, tabel `personal_access_tokens`). Dokumentasi `API.md`. Test memory limit dinaikkan ke 512M di `phpunit.xml` (render PDF di banyak test). 11 test baru, total 40 test. | Claude Code (Opus 5.5) |
+| 2026-11-10 | Dasbor memakai data real: 5 widget (statistik asset, donut kondisi & status, grafik per perangkat daerah, tabel kendaraan terbaru). `FilamentInfoWidget` dihapus. 4 test baru, total 44 test. | Claude Code (Opus 5.5) |
