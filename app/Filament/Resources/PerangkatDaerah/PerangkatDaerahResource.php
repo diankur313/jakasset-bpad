@@ -7,6 +7,7 @@ use App\Filament\Resources\Instansi\Tables\InstansiTable;
 use App\Filament\Resources\PerangkatDaerah\Pages\ListPerangkatDaerah;
 use App\Filament\Resources\PerangkatDaerah\Pages\ViewPerangkatDaerah;
 use App\Filament\Resources\PerangkatDaerah\RelationManagers\KendaraanDinasRelationManager;
+use App\Filament\Resources\PerangkatDaerah\RelationManagers\PegawaiRelationManager;
 use App\Models\Instansi;
 use BackedEnum;
 use Filament\Actions\ViewAction;
@@ -81,6 +82,7 @@ class PerangkatDaerahResource extends Resource
     {
         return [
             KendaraanDinasRelationManager::class,
+            PegawaiRelationManager::class,
         ];
     }
 

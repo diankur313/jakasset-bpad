@@ -170,3 +170,21 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 6. Test: test menu warna diganti dengan 4 test baru (simpan Warna Tersedia, tambah warna baru via tombol +, warna terpakai tidak bisa dikeluarkan, warna Kendaraan Dinas harus dari master). `php artisan test`: 20 test lolos. Dicek di browser: menu warna hilang, field Warna Tersedia dan modal tambah warna tampil benar.
 7. Catatan: `php artisan db:seed` membuat sesi login admin berakhir, karena `AdminUserSeeder` meng-hash ulang password.
 8. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Relasi Pegawai ke Instansi, Pemegang wajib
+
+**Instruksi:**
+> Pegawai memiliki relasi dengan instansi pemilik, hal ini penting dilakukan untuk menjaga kualitas data yang baik / menghindari redundant. Kemudian field pegawai pada form yang berada di menu http://localhost:8000/admin/asset/kendaraan-dinas sifatnya mandatory. (dengan screenshot section Kepemilikan & Pemegang)
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Migration `2026_11_10_100007`: `pegawai.instansi_id` (FK ke `instansi`, `restrictOnDelete`). Nullable di database agar data lama valid; pegawai yang sudah jadi pemegang otomatis diisi instansi kendaraannya.
+2. Model: `Pegawai::instansi()`, `Instansi::pegawai()`.
+3. Form Pegawai: field Instansi (wajib). Pegawai yang masih memegang kendaraan dinas instansi lain tidak bisa dipindah instansi. Tabel Pegawai: kolom & filter Instansi.
+4. Form Kendaraan Dinas: Pemegang wajib, pilihan hanya pegawai dari Perangkat Daerah pemilik (divalidasi dengan `in`), dikosongkan saat perangkat daerah diganti.
+5. Hapus Instansi Pemilik juga dicek terhadap Pegawai (`InstansiResource::DEPENDENCIES`).
+6. Detail Perangkat Daerah: daftar pegawai (read-only) dan jumlah pegawai.
+7. Perbaikan tampilan yang ditemukan saat cek browser: Filament menyembunyikan tanda * pada field yang dikunci, jadi field turunan (Tipe/Model, Tahun, Warna, Pemegang) tidak lagi dikunci, dan placeholder-nya dibuat statis. Kolom Instansi di tabel Pegawai dibatasi satu baris + tooltip.
+8. `PegawaiSeeder`: 10 pegawai dummy dibagi ke Disdik (4), Dinkes (3), PUPR (3).
+9. 5 test baru (pegawai wajib punya instansi, pemegang wajib & harus dari instansi pemilik, ganti perangkat daerah mengosongkan pemegang, pegawai pemegang tidak bisa pindah instansi, hapus instansi yang punya pegawai diblokir). `php artisan test`: 25 test lolos. Dicek di browser.
+10. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.

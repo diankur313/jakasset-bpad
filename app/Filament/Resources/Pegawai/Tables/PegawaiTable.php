@@ -17,13 +17,20 @@ class PegawaiTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->withCount('kendaraanDinas'))
+            ->modifyQueryUsing(fn ($query) => $query->with('instansi')->withCount('kendaraanDinas'))
             ->defaultSort('nama')
             ->columns([
                 TextColumn::make('nama')->label('Nama')->searchable()->sortable(),
                 TextColumn::make('nip')->label('NIP')->searchable()->copyable(),
                 TextColumn::make('jabatan')->label('Jabatan')->searchable()->sortable(),
                 TextColumn::make('golongan')->label('Golongan')->badge()->sortable(),
+                TextColumn::make('instansi.nama')
+                    ->label('Instansi')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(25)
+                    ->tooltip(fn ($record): ?string => $record->instansi?->nama)
+                    ->placeholder('Belum diisi'),
                 TextColumn::make('kendaraan_dinas_count')
                     ->label('Kendaraan Dinas')
                     ->numeric()
@@ -31,6 +38,11 @@ class PegawaiTable
                     ->alignCenter(),
             ])
             ->filters([
+                SelectFilter::make('instansi_id')
+                    ->label('Instansi')
+                    ->relationship('instansi', 'nama')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('golongan')
                     ->label('Golongan')
                     ->options(array_combine(Pegawai::GOLONGAN, Pegawai::GOLONGAN)),

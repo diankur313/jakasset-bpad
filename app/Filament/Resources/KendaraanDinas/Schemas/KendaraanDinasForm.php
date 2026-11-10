@@ -16,6 +16,8 @@ use Filament\Schemas\Schema;
 
 /**
  * Merek -> Tipe / Model -> Tahun Produksi adalah pilihan berjenjang dari Master Kendaraan.
+ * Field turunan tidak dikunci (Filament menyembunyikan tanda * pada field terkunci); selama
+ * induknya kosong, pilihannya kosong. Placeholder dibuat statis karena tidak diperbarui otomatis.
  * Hanya "Tahun Produksi" (master_kendaraan_id) yang disimpan; Merek dan Tipe / Model
  * dibaca dari relasi masterKendaraan.
  *
@@ -24,6 +26,21 @@ use Filament\Schemas\Schema;
  */
 class KendaraanDinasForm
 {
+    /** @return array<int, string> [id pegawai => "Nama — NIP"] yang terdaftar di instansi ini. */
+    public static function pegawaiInstansi(mixed $instansiId): array
+    {
+        if (blank($instansiId)) {
+            return [];
+        }
+
+        return Pegawai::query()
+            ->where('instansi_id', $instansiId)
+            ->orderBy('nama')
+            ->get()
+            ->mapWithKeys(fn (Pegawai $pegawai): array => [$pegawai->id => "{$pegawai->nama} — {$pegawai->nip}"])
+            ->all();
+    }
+
     /** @return array<int, string> [id warna => nama] yang tersedia untuk master kendaraan ini. */
     public static function warnaTersedia(mixed $masterKendaraanId): array
     {
@@ -81,8 +98,7 @@ class KendaraanDinasForm
                             ->required()
                             ->live()
                             ->dehydrated(false)
-                            ->disabled(fn (Get $get): bool => blank($get('merek')))
-                            ->placeholder(fn (Get $get): string => blank($get('merek')) ? 'Pilih merek dahulu' : 'Pilih tipe / model')
+                            ->placeholder('Pilih tipe / model (sesuai merek)')
                             ->afterStateHydrated(fn (Select $component, ?KendaraanDinas $record) => $component
                                 ->state($record?->masterKendaraan?->tipe_model))
                             ->afterStateUpdated(function (Set $set): void {
@@ -99,8 +115,7 @@ class KendaraanDinasForm
                                 ->pluck('tahun_produksi', 'id')->all())
                             ->required()
                             ->live()
-                            ->disabled(fn (Get $get): bool => blank($get('tipe_model')))
-                            ->placeholder(fn (Get $get): string => blank($get('tipe_model')) ? 'Pilih tipe / model dahulu' : 'Pilih tahun produksi')
+                            ->placeholder('Pilih tahun produksi (sesuai tipe)')
                             ->exists('master_kendaraan', 'id')
                             // Isi Kondisi & Status awal dari master; masih bisa diubah. Warna dikosongkan
                             // kecuali master hanya punya satu warna.
@@ -125,8 +140,7 @@ class KendaraanDinasForm
                             ->in(fn (Get $get): array => array_keys(static::warnaTersedia($get('master_kendaraan_id'))))
                             ->searchable()
                             ->required()
-                            ->disabled(fn (Get $get): bool => blank($get('master_kendaraan_id')))
-                            ->placeholder(fn (Get $get): string => blank($get('master_kendaraan_id')) ? 'Pilih tahun produksi dahulu' : 'Pilih warna')
+                            ->placeholder('Pilih warna (sesuai tahun produksi)')
                             ->validationMessages(['in' => 'Warna ini tidak tersedia untuk tipe kendaraan yang dipilih.'])
                             ->helperText('Pilihan warna diatur di Master Data > Kendaraan (Warna Tersedia).'),
 
@@ -150,15 +164,21 @@ class KendaraanDinasForm
                             ->relationship('instansi', 'nama')
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->live()
+                            // Pemegang harus pegawai instansi ini, jadi dikosongkan saat instansi berganti.
+                            ->afterStateUpdated(fn (Set $set) => $set('pegawai_id', null)),
 
                         Select::make('pegawai_id')
                             ->label('Pemegang (Pegawai)')
-                            ->relationship('pegawai', 'nama')
-                            ->getOptionLabelFromRecordUsing(fn (Pegawai $record): string => "{$record->nama} — {$record->nip}")
-                            ->searchable(['nama', 'nip'])
-                            ->preload()
-                            ->placeholder('Belum ada pemegang'),
+                            // Hanya pegawai dari perangkat daerah pemilik yang dipilih.
+                            ->options(fn (Get $get): array => static::pegawaiInstansi($get('instansi_id')))
+                            ->in(fn (Get $get): array => array_keys(static::pegawaiInstansi($get('instansi_id'))))
+                            ->searchable()
+                            ->required()
+                            ->placeholder('Pilih pegawai (sesuai perangkat daerah)')
+                            ->validationMessages(['in' => 'Pegawai ini tidak terdaftar di perangkat daerah yang dipilih.'])
+                            ->helperText('Hanya pegawai dari perangkat daerah pemilik. Instansi pegawai diatur di menu Pegawai.'),
                     ]),
             ]);
     }

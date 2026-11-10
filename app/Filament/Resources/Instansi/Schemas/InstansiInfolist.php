@@ -26,6 +26,10 @@ class InstansiInfolist
                             ->label('Jumlah Kendaraan Dinas')
                             ->state(fn ($record): int => $record->kendaraanDinas()->count())
                             ->suffix(' unit'),
+                        TextEntry::make('pegawai_count')
+                            ->label('Jumlah Pegawai')
+                            ->state(fn ($record): int => $record->pegawai()->count())
+                            ->suffix(' orang'),
                     ]),
             ]);
     }

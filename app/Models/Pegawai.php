@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Table('pegawai')]
-#[Fillable(['nama', 'nip', 'jabatan', 'golongan'])]
+#[Fillable(['nama', 'nip', 'jabatan', 'golongan', 'instansi_id'])]
 class Pegawai extends Model
 {
     /** Golongan ruang PNS. */
@@ -18,6 +19,12 @@ class Pegawai extends Model
         'III/a', 'III/b', 'III/c', 'III/d',
         'IV/a', 'IV/b', 'IV/c', 'IV/d', 'IV/e',
     ];
+
+    /** Instansi (perangkat daerah) tempat pegawai bertugas. */
+    public function instansi(): BelongsTo
+    {
+        return $this->belongsTo(Instansi::class);
+    }
 
     public function kendaraanDinas(): HasMany
     {

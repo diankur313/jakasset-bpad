@@ -44,6 +44,7 @@ class InstansiResource extends Resource
     /** Data turunan yang dicek sebelum instansi dihapus. */
     public const DEPENDENCIES = [
         'kendaraanDinas' => ['label' => 'Kendaraan Dinas', 'title' => 'nomor_polisi'],
+        'pegawai' => ['label' => 'Pegawai', 'title' => 'nama'],
     ];
 
     public static function form(Schema $schema): Schema

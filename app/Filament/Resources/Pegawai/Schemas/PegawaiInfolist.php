@@ -20,6 +20,7 @@ class PegawaiInfolist
                         TextEntry::make('nip')->label('NIP')->copyable(),
                         TextEntry::make('jabatan')->label('Jabatan'),
                         TextEntry::make('golongan')->label('Golongan')->badge(),
+                        TextEntry::make('instansi.nama')->label('Instansi (Perangkat Daerah)')->placeholder('Belum diisi')->columnSpanFull(),
                         TextEntry::make('kendaraanDinas.nomor_polisi')
                             ->label('Kendaraan Dinas yang Dipegang')
                             ->badge()

@@ -30,7 +30,7 @@ class KendaraanDinasInfolist
                     ->columnSpanFull()
                     ->schema([
                         TextEntry::make('instansi.nama')->label('Perangkat Daerah (Pemilik)'),
-                        TextEntry::make('pegawai.nama')->label('Pemegang (Pegawai)')->placeholder('Belum ada pemegang'),
+                        TextEntry::make('pegawai.nama')->label('Pemegang (Pegawai)')->placeholder('-'),
                         TextEntry::make('pegawai.nip')->label('NIP Pemegang')->placeholder('-'),
                         TextEntry::make('pegawai.jabatan')->label('Jabatan Pemegang')->placeholder('-'),
                     ]),

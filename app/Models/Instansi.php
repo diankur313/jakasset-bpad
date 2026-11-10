@@ -14,6 +14,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['nama', 'singkatan', 'alamat'])]
 class Instansi extends Model
 {
+    public function pegawai(): HasMany
+    {
+        return $this->hasMany(Pegawai::class);
+    }
+
     public function kendaraanDinas(): HasMany
     {
         return $this->hasMany(KendaraanDinas::class);

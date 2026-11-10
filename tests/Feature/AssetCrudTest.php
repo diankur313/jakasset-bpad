@@ -51,12 +51,15 @@ class AssetCrudTest extends TestCase
 
     private function instansi(string $nama = 'Dinas Pendidikan'): Instansi
     {
-        return Instansi::create(['nama' => $nama]);
+        return Instansi::firstOrCreate(['nama' => $nama]);
     }
 
-    private function pegawai(string $nip = '199001012015031001'): Pegawai
+    private function pegawai(string $nip = '199001012015031001', ?Instansi $instansi = null): Pegawai
     {
-        return Pegawai::create(['nama' => 'Budi', 'nip' => $nip, 'jabatan' => 'Kepala Seksi', 'golongan' => 'III/c']);
+        return Pegawai::create([
+            'nama' => 'Budi', 'nip' => $nip, 'jabatan' => 'Kepala Seksi', 'golongan' => 'III/c',
+            'instansi_id' => ($instansi ?? $this->instansi())->id,
+        ]);
     }
 
     private function warna(string $nama = 'Hitam'): WarnaKendaraan
@@ -98,7 +101,7 @@ class AssetCrudTest extends TestCase
     public function test_tambah_dan_edit_pegawai(): void
     {
         Livewire::test(CreatePegawai::class)
-            ->fillForm(['nama' => 'Siti', 'nip' => '198505052010012002', 'jabatan' => 'Analis', 'golongan' => 'III/a'])
+            ->fillForm(['nama' => 'Siti', 'nip' => '198505052010012002', 'jabatan' => 'Analis', 'golongan' => 'III/a', 'instansi_id' => $this->instansi()->id])
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -110,6 +113,82 @@ class AssetCrudTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame('Kepala Bidang', $p->fresh()->jabatan);
+        $this->assertSame('Dinas Pendidikan', $p->fresh()->instansi->nama);
+    }
+
+    public function test_pegawai_wajib_punya_instansi(): void
+    {
+        Livewire::test(CreatePegawai::class)
+            ->fillForm(['nama' => 'Tanpa Instansi', 'nip' => '198505052010012003', 'jabatan' => 'Staf', 'golongan' => 'II/a'])
+            ->call('create')
+            ->assertHasFormErrors(['instansi_id' => 'required']);
+    }
+
+    public function test_pemegang_wajib_dan_harus_dari_instansi_pemilik(): void
+    {
+        $m = $this->master();
+        $m->warna()->attach($this->warna());
+        $disdik = $this->instansi('Dinas Pendidikan');
+        $dinkes = $this->instansi('Dinas Kesehatan');
+        $pegawaiDisdik = $this->pegawai('199001012015031001', $disdik);
+        $pegawaiDinkes = $this->pegawai('199001012015031002', $dinkes);
+
+        $form = fn () => Livewire::test(CreateKendaraanDinas::class)
+            ->fillForm(['merek' => 'Toyota'])
+            ->fillForm(['tipe_model' => 'Innova Zenix'])
+            ->fillForm(['master_kendaraan_id' => $m->id])
+            ->fillForm(['nomor_polisi' => 'B 555 PD', 'instansi_id' => $disdik->id]);
+
+        // Pemegang wajib diisi.
+        $form()->call('create')->assertHasFormErrors(['pegawai_id' => 'required']);
+
+        // Pegawai instansi lain ditolak.
+        $form()->fillForm(['pegawai_id' => $pegawaiDinkes->id])->call('create')->assertHasFormErrors(['pegawai_id' => 'in']);
+
+        // Pegawai instansi yang sama diterima.
+        $form()->fillForm(['pegawai_id' => $pegawaiDisdik->id])->call('create')->assertHasNoFormErrors();
+
+        $this->assertSame($pegawaiDisdik->id, KendaraanDinas::firstOrFail()->pegawai_id);
+    }
+
+    public function test_ganti_perangkat_daerah_mengosongkan_pemegang(): void
+    {
+        $disdik = $this->instansi('Dinas Pendidikan');
+        $dinkes = $this->instansi('Dinas Kesehatan');
+        $p = $this->pegawai('199001012015031001', $disdik);
+
+        Livewire::test(CreateKendaraanDinas::class)
+            ->fillForm(['instansi_id' => $disdik->id])
+            ->fillForm(['pegawai_id' => $p->id])
+            ->fillForm(['instansi_id' => $dinkes->id])
+            ->assertSchemaStateSet(['pegawai_id' => null]);
+    }
+
+    public function test_pegawai_pemegang_kendaraan_tidak_bisa_pindah_instansi(): void
+    {
+        $disdik = $this->instansi('Dinas Pendidikan');
+        $dinkes = $this->instansi('Dinas Kesehatan');
+        $p = $this->pegawai('199001012015031001', $disdik);
+        $this->kendaraan($this->master(), $disdik, $p);
+
+        Livewire::test(EditPegawai::class, ['record' => $p->getRouteKey()])
+            ->fillForm(['instansi_id' => $dinkes->id])
+            ->call('save')
+            ->assertHasFormErrors(['instansi_id']);
+
+        $this->assertSame($disdik->id, $p->fresh()->instansi_id);
+    }
+
+    public function test_hapus_instansi_yang_punya_pegawai_diblokir(): void
+    {
+        $i = $this->instansi('Dinas Kesehatan');
+        $this->pegawai('199001012015031001', $i);
+
+        Livewire::test(ListInstansi::class)
+            ->callAction(TestAction::make('delete')->table($i))
+            ->assertNotified('Data tidak dapat dihapus');
+
+        $this->assertModelExists($i);
     }
 
     public function test_nip_harus_18_digit_dan_unik(): void
@@ -117,12 +196,12 @@ class AssetCrudTest extends TestCase
         $this->pegawai('199001012015031001');
 
         Livewire::test(CreatePegawai::class)
-            ->fillForm(['nama' => 'X', 'nip' => '123', 'jabatan' => 'Staf', 'golongan' => 'II/a'])
+            ->fillForm(['nama' => 'X', 'nip' => '123', 'jabatan' => 'Staf', 'golongan' => 'II/a', 'instansi_id' => $this->instansi()->id])
             ->call('create')
             ->assertHasFormErrors(['nip']);
 
         Livewire::test(CreatePegawai::class)
-            ->fillForm(['nama' => 'X', 'nip' => '199001012015031001', 'jabatan' => 'Staf', 'golongan' => 'II/a'])
+            ->fillForm(['nama' => 'X', 'nip' => '199001012015031001', 'jabatan' => 'Staf', 'golongan' => 'II/a', 'instansi_id' => $this->instansi()->id])
             ->call('create')
             ->assertHasFormErrors(['nip' => 'unique']);
     }
