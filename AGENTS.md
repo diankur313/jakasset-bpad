@@ -113,3 +113,16 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 6. Membuat `ADDED_VALUE.md` berisi entri AV-001 (prompt asli, penjelasan, spesifikasi, file, verifikasi).
 7. 3 test baru di `AssetCrudTest`. `php artisan test`: 16 test lolos. Dicek di browser: kolom dan field terkunci tampil benar. Data dan counter yang dipakai untuk pengecekan sudah dihapus lagi.
 8. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — AV-001 Revisi 1: Nomor Asset tidak ditampilkan di form
+
+**Instruksi:**
+> Field tidak perlu ditampilkan di form / user nggak perlu tahu, jadikan dia berjalan di backend aja. (dengan screenshot field Nomor Asset di form)
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Field `nomor_asset` dihapus dari `KendaraanDinasForm.php`. Pembuatan nomor tetap otomatis lewat `KendaraanDinas::creating`.
+2. Nomor Asset tetap tampil di tabel, halaman detail, detail Perangkat Daerah, dan pencarian global.
+3. Test diperbarui: field dipastikan tidak ada di form tambah & ubah. `php artisan test`: 16 test lolos. Dicek di browser: halaman tambah tidak lagi menampilkan Nomor Asset.
+4. `ADDED_VALUE.md` diperbarui: spesifikasi AV-001 disesuaikan dan entri "Revisi 1" ditambahkan.
+5. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.

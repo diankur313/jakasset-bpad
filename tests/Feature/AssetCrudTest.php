@@ -275,8 +275,11 @@ class AssetCrudTest extends TestCase
         $this->assertSame('Merah', $k->fresh()->warna);
 
         Livewire::test(EditKendaraanDinas::class, ['record' => $k->getRouteKey()])
-            ->assertSchemaStateSet(['nomor_asset' => $asli])
-            ->assertFormFieldDisabled('nomor_asset');
+            ->assertFormFieldDoesNotExist('nomor_asset');
+
+        // Field juga tidak ada di form tambah.
+        Livewire::test(CreateKendaraanDinas::class)
+            ->assertFormFieldDoesNotExist('nomor_asset');
     }
 
     public function test_perangkat_daerah_hanya_lihat(): void

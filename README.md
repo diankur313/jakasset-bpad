@@ -84,7 +84,7 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 |------|-----|--------|------------|
 | Pegawai | `/admin/pegawai` | CRUD | Form: Nama, NIP (18 digit, unik), Jabatan, Golongan (I/a s.d. IV/e) |
 | Perangkat Daerah | `/admin/perangkat-daerah` | **Hanya lihat** | Sumber data: Master Data > Instansi Pemilik. Halaman detail menampilkan daftar kendaraan dinas milik perangkat daerah tersebut. |
-| **Asset** > Kendaraan Dinas | `/admin/asset/kendaraan-dinas` | CRUD (data transaksi) | Form: Nomor Asset (otomatis), Nomor Polisi, Merek, Tipe / Model, Tahun Produksi, Warna Kendaraan, Kondisi, Status, Perangkat Daerah (pemilik), Pemegang (pegawai) |
+| **Asset** > Kendaraan Dinas | `/admin/asset/kendaraan-dinas` | CRUD (data transaksi) | Nomor Asset dibuat otomatis di backend (tidak ada di form). Form: Nomor Polisi, Merek, Tipe / Model, Tahun Produksi, Warna Kendaraan, Kondisi, Status, Perangkat Daerah (pemilik), Pemegang (pegawai) |
 | **Master Data** > Kendaraan | `/admin/master-data/kendaraan` | CRUD | Form: Merek, Tipe / Model, Tahun Produksi, Kondisi, Status. Kombinasi Merek + Tipe + Tahun harus unik. |
 | **Master Data** > Instansi Pemilik | `/admin/master-data/instansi` | CRUD | Form: Nama Instansi (unik), Singkatan, Alamat |
 
@@ -102,7 +102,8 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 - Nomor polisi otomatis diubah ke huruf besar dan divalidasi formatnya (contoh `B 1234 ABC`).
 
 ### Nomor Asset (Added Value AV-001)
-- Format **`YYYY-mm-dd/KENDARAAN/0001`**, dibuat otomatis saat kendaraan dinas pertama kali disimpan, unik, dan tidak bisa diubah.
+- Format **`YYYY-mm-dd/KENDARAAN/0001`**, dibuat otomatis di backend saat kendaraan dinas pertama kali disimpan, unik, dan tidak bisa diubah.
+- Tidak ada di form tambah/ubah. Hanya ditampilkan di tabel, halaman detail, detail Perangkat Daerah, dan pencarian global.
 - Tanggal = tanggal pencatatan (WIB). Running number 4 digit dihitung per jenis asset per tanggal (mulai `0001` tiap hari) dan tidak dipakai ulang walaupun datanya dihapus.
 - Generator: `app/Support/NomorAsset.php`, penghitung di tabel `nomor_asset_sequences`. Detail lengkap di [`ADDED_VALUE.md`](ADDED_VALUE.md).
 
@@ -211,3 +212,4 @@ php artisan test
 | 2026-11-10 | Inisialisasi git (branch `main`) dan push ke GitHub `diankur313/jakasset-bpad`. History disusun per tahap pengerjaan. | Claude Code (Opus 5.5) |
 | 2026-11-10 | Data dummy: `PegawaiSeeder` (10 pegawai) dan `MasterKendaraanSeeder` (10 master kendaraan), dipanggil dari `DatabaseSeeder` hanya saat `APP_ENV=local`. | Claude Code (Opus 5.5) |
 | 2026-11-10 | **Added Value AV-001:** Nomor Asset otomatis di Kendaraan Dinas (`YYYY-mm-dd/KENDARAAN/0001`), tabel `nomor_asset_sequences`, `APP_TIMEZONE=Asia/Jakarta`, file `ADDED_VALUE.md`, 3 test baru (total 16). | Claude Code (Opus 5.5) |
+| 2026-11-10 | AV-001 Revisi 1: field Nomor Asset dihapus dari form Kendaraan Dinas (tetap dibuat otomatis di backend, tampil di tabel & detail). | Claude Code (Opus 5.5) |

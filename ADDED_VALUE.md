@@ -44,7 +44,7 @@ Contoh hasil: **`2026-11-10/KENDARAAN/0001`**
 
 ### Spesifikasi yang diterapkan
 
-1. **Kapan dibuat:** saat data kendaraan dinas pertama kali disimpan. Di form tambah, field Nomor Asset tampil terkunci dengan keterangan "Dibuat otomatis saat disimpan".
+1. **Kapan dibuat:** saat data kendaraan dinas pertama kali disimpan, sepenuhnya di backend. Field Nomor Asset **tidak ditampilkan di form** tambah maupun ubah (lihat Revisi 1).
 2. **Tanggal:** tanggal pencatatan menurut waktu Jakarta (WIB). Timezone aplikasi diubah dari UTC ke `Asia/Jakarta` supaya data yang diinput antara pukul 00.00 dan 06.59 WIB tidak tercatat dengan tanggal hari sebelumnya.
 3. **Jenis asset:** ditulis `KENDARAAN` (huruf besar, sesuai kebiasaan penulisan kode), disimpan sebagai konstanta `KendaraanDinas::JENIS_ASSET`. Generatornya dibuat umum, sehingga jenis aset lain nanti (misalnya `TANAH`, `GEDUNG`) cukup memakai jenis yang berbeda.
 4. **Running number:**
@@ -52,7 +52,7 @@ Contoh hasil: **`2026-11-10/KENDARAAN/0001`**
    - **Dihitung per jenis asset per tanggal**, jadi mulai lagi dari `0001` setiap hari. Karena tanggal ikut menjadi bagian kode, nomornya tetap unik, dan batas 9999 berlaku per hari, bukan untuk seluruh aset.
    - **Tidak dipakai ulang**: jika kendaraan dengan nomor `0002` dihapus, kendaraan berikutnya tetap mendapat `0003`, supaya satu nomor asset selalu merujuk ke satu kendaraan saja.
 5. **Unik dan aman dari input bersamaan:** penghitung disimpan di tabel `nomor_asset_sequences` dan dinaikkan dengan satu perintah `UPDATE ... + 1` yang atomik. Kolom `nomor_asset` juga diberi unique index sebagai pengaman terakhir.
-6. **Tidak bisa diubah:** field terkunci di form edit, tidak termasuk `$fillable`, dan model mengembalikan nilai aslinya jika ada yang mencoba mengubahnya.
+6. **Tidak bisa diubah:** tidak ada di form, tidak termasuk `$fillable`, dan model mengembalikan nilai aslinya jika ada yang mencoba mengubahnya.
 7. **Tampilan:** kolom pertama di tabel Kendaraan Dinas (bisa dicari, diurutkan, dan disalin), di halaman detail, di daftar kendaraan pada detail Perangkat Daerah, dan di pencarian global panel.
 8. **Data lama:** migration mengisi nomor asset untuk kendaraan yang sudah ada berdasarkan tanggal `created_at`.
 
@@ -63,14 +63,28 @@ Contoh hasil: **`2026-11-10/KENDARAAN/0001`**
 | `app/Support/NomorAsset.php` | Generator nomor asset (baru) |
 | `database/migrations/2026_11_10_100004_add_nomor_asset_to_kendaraan_dinas_table.php` | Kolom `nomor_asset` (unik), tabel `nomor_asset_sequences`, isi data lama (baru) |
 | `app/Models/KendaraanDinas.php` | Konstanta `JENIS_ASSET`, hook `creating` (buat nomor) dan `updating` (kunci nomor) |
-| `app/Filament/Resources/KendaraanDinas/Schemas/KendaraanDinasForm.php` | Field Nomor Asset (terkunci) |
+| `app/Filament/Resources/KendaraanDinas/Schemas/KendaraanDinasForm.php` | Awalnya field Nomor Asset terkunci; dihapus di Revisi 1 |
 | `app/Filament/Resources/KendaraanDinas/Schemas/KendaraanDinasInfolist.php` | Nomor Asset di halaman detail |
 | `app/Filament/Resources/KendaraanDinas/Tables/KendaraanDinasTable.php` | Kolom Nomor Asset |
 | `app/Filament/Resources/KendaraanDinas/KendaraanDinasResource.php` | Pencarian global berdasarkan nomor polisi & nomor asset |
 | `config/app.php`, `.env`, `.env.example` | `APP_TIMEZONE=Asia/Jakarta` |
-| `tests/Feature/AssetCrudTest.php` | 3 test baru: urutan & reset harian, tanggal WIB, nomor tidak bisa diubah |
+| `tests/Feature/AssetCrudTest.php` | 3 test baru: urutan & reset harian, tanggal WIB, nomor tidak bisa diubah & tidak ada di form |
 
 ### Verifikasi
 
 - `php artisan test`: 16 test lolos (105 assertion).
-- Browser: kolom Nomor Asset tampil di tabel (`2026-11-10/KENDARAAN/0001`) dan terkunci di form edit. Data dan counter yang dipakai untuk pengecekan sudah dihapus lagi.
+- Browser: kolom Nomor Asset tampil di tabel (`2026-11-10/KENDARAAN/0001`). Data dan counter yang dipakai untuk pengecekan sudah dihapus lagi.
+
+### Revisi 1 — Nomor Asset tidak ditampilkan di form (2026-11-10)
+
+**Prompt:**
+> Field tidak perlu ditampilkan di form / user nggak perlu tahu, jadikan dia berjalan di backend aja.
+
+**Penjelasan:** Sebelumnya form tambah dan ubah Kendaraan Dinas menampilkan field Nomor Asset yang terkunci dengan placeholder "Dibuat otomatis saat disimpan". Field itu tidak berguna bagi pengguna saat mengisi form, jadi dihapus. Pembuatan nomor tetap berjalan otomatis di backend lewat hook `KendaraanDinas::creating`.
+
+**Perubahan:**
+- Field `nomor_asset` dihapus dari `KendaraanDinasForm.php` (form tambah & ubah).
+- Nomor Asset **tetap ditampilkan** di tabel Kendaraan Dinas, halaman detail, daftar kendaraan di detail Perangkat Daerah, dan pencarian global, karena fungsinya sebagai identitas kendaraan.
+- Test `test_nomor_asset_tidak_bisa_diubah` sekarang memastikan field tidak ada di form tambah maupun ubah.
+
+**Verifikasi:** `php artisan test`: 16 test lolos. Di browser, halaman tambah Kendaraan Dinas hanya menampilkan "Nomor Polisi", tanpa Nomor Asset.

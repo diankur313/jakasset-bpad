@@ -18,6 +18,9 @@ use Filament\Schemas\Schema;
  * Merek -> Tipe / Model -> Tahun Produksi adalah pilihan berjenjang dari Master Kendaraan.
  * Hanya "Tahun Produksi" (master_kendaraan_id) yang disimpan; Merek dan Tipe / Model
  * dibaca dari relasi masterKendaraan.
+ *
+ * Nomor Asset sengaja tidak ada di form: dibuat otomatis di backend
+ * (KendaraanDinas::creating) dan hanya ditampilkan di tabel & halaman detail.
  */
 class KendaraanDinasForm
 {
@@ -30,13 +33,6 @@ class KendaraanDinasForm
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
-                        TextInput::make('nomor_asset')
-                            ->label('Nomor Asset')
-                            ->disabled()
-                            ->dehydrated(false)
-                            ->placeholder('Dibuat otomatis saat disimpan')
-                            ->helperText('Format: YYYY-mm-dd/KENDARAAN/0001. Tidak dapat diubah.'),
-
                         TextInput::make('nomor_polisi')
                             ->label('Nomor Polisi')
                             ->required()
