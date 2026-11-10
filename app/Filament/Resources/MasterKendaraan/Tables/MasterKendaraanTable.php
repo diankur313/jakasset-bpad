@@ -19,7 +19,7 @@ class MasterKendaraanTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->withCount('kendaraanDinas'))
+            ->modifyQueryUsing(fn ($query) => $query->with('warna')->withCount('kendaraanDinas'))
             ->defaultSort('merek')
             ->columns([
                 TextColumn::make('merek')->label('Merek')->searchable()->sortable(),
@@ -27,6 +27,14 @@ class MasterKendaraanTable
                 TextColumn::make('tahun_produksi')->label('Tahun Produksi')->sortable(),
                 TextColumn::make('kondisi')->label('Kondisi')->badge()->sortable(),
                 TextColumn::make('status')->label('Status')->badge()->sortable(),
+                TextColumn::make('warna.nama')
+                    ->label('Warna Tersedia')
+                    ->badge()
+                    ->color('gray')
+                    ->limitList(3)
+                    ->expandableLimitedList()
+                    ->placeholder('-')
+                    ->toggleable(),
                 TextColumn::make('kendaraan_dinas_count')
                     ->label('Dipakai')
                     ->suffix(' unit')

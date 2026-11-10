@@ -20,8 +20,7 @@ use App\Models\MasterKendaraan;
 use App\Models\Pegawai;
 use App\Models\User;
 use App\Models\WarnaKendaraan;
-use App\Filament\Resources\WarnaKendaraan\Pages\CreateWarnaKendaraan;
-use App\Filament\Resources\WarnaKendaraan\Pages\ListWarnaKendaraan;
+use App\Filament\Resources\MasterKendaraan\Pages\EditMasterKendaraan;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +66,8 @@ class AssetCrudTest extends TestCase
 
     private function kendaraan(MasterKendaraan $m, Instansi $i, ?Pegawai $p = null, string $nopol = 'B 1234 ABC'): KendaraanDinas
     {
+        $m->warna()->syncWithoutDetaching([$this->warna()->id]);
+
         return KendaraanDinas::create([
             'nomor_polisi' => $nopol,
             'master_kendaraan_id' => $m->id,
@@ -88,7 +89,6 @@ class AssetCrudTest extends TestCase
             '/admin/pegawai', '/admin/pegawai/create',
             '/admin/master-data/kendaraan', '/admin/master-data/kendaraan/create',
             '/admin/master-data/instansi', '/admin/master-data/instansi/create',
-            '/admin/master-data/warna-kendaraan', '/admin/master-data/warna-kendaraan/create',
             '/admin/perangkat-daerah', "/admin/perangkat-daerah/{$i->id}",
         ] as $url) {
             $this->get($url)->assertOk();
@@ -130,14 +130,15 @@ class AssetCrudTest extends TestCase
     public function test_master_kendaraan_kombinasi_unik(): void
     {
         $this->master();
+        $w = [$this->warna()->id];
 
         Livewire::test(CreateMasterKendaraan::class)
-            ->fillForm(['merek' => 'Toyota', 'tipe_model' => 'Innova Zenix', 'tahun_produksi' => 2023, 'kondisi' => 'baik', 'status' => 'active'])
+            ->fillForm(['merek' => 'Toyota', 'tipe_model' => 'Innova Zenix', 'tahun_produksi' => 2023, 'kondisi' => 'baik', 'status' => 'active', 'warna' => $w])
             ->call('create')
             ->assertHasFormErrors(['tahun_produksi' => 'unique']);
 
         Livewire::test(CreateMasterKendaraan::class)
-            ->fillForm(['merek' => 'Toyota', 'tipe_model' => 'Innova Zenix', 'tahun_produksi' => 2024, 'kondisi' => 'rusak_ringan', 'status' => 'standby'])
+            ->fillForm(['merek' => 'Toyota', 'tipe_model' => 'Innova Zenix', 'tahun_produksi' => 2024, 'kondisi' => 'rusak_ringan', 'status' => 'standby', 'warna' => $w])
             ->call('create')
             ->assertHasNoFormErrors();
     }
@@ -145,6 +146,8 @@ class AssetCrudTest extends TestCase
     public function test_tambah_kendaraan_dinas_dengan_pilihan_berjenjang(): void
     {
         $m = $this->master(['kondisi' => KondisiKendaraan::RusakRingan, 'status' => StatusKendaraan::Standby]);
+        $putih = $this->warna('Putih');
+        $m->warna()->attach($putih);
         $i = $this->instansi();
         $p = $this->pegawai();
 
@@ -152,9 +155,13 @@ class AssetCrudTest extends TestCase
             ->fillForm(['merek' => 'Toyota'])
             ->fillForm(['tipe_model' => 'Innova Zenix'])
             ->fillForm(['master_kendaraan_id' => $m->id])
-            // kondisi & status otomatis terisi dari master
-            ->assertSchemaStateSet(['kondisi' => KondisiKendaraan::RusakRingan, 'status' => StatusKendaraan::Standby])
-            ->fillForm(['nomor_polisi' => 'b 9999 xy', 'warna_kendaraan_id' => $this->warna('Putih')->id, 'instansi_id' => $i->id, 'pegawai_id' => $p->id])
+            // kondisi & status otomatis terisi dari master; warna terisi karena master hanya punya satu warna
+            ->assertSchemaStateSet([
+                'kondisi' => KondisiKendaraan::RusakRingan,
+                'status' => StatusKendaraan::Standby,
+                'warna_kendaraan_id' => $putih->id,
+            ])
+            ->fillForm(['nomor_polisi' => 'b 9999 xy', 'instansi_id' => $i->id, 'pegawai_id' => $p->id])
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -280,6 +287,7 @@ class AssetCrudTest extends TestCase
         $this->assertSame($asli, $k->fresh()->nomor_asset);
 
         $merah = $this->warna('Merah');
+        $k->masterKendaraan->warna()->attach($merah);
         $k->update(['nomor_asset' => 'X', 'warna_kendaraan_id' => $merah->id]);
         $this->assertSame($asli, $k->fresh()->nomor_asset);
         $this->assertSame('Merah', $k->fresh()->warnaKendaraan->nama);
@@ -292,37 +300,87 @@ class AssetCrudTest extends TestCase
             ->assertFormFieldDoesNotExist('nomor_asset');
     }
 
-    public function test_warna_kendaraan_dirapikan_dan_unik(): void
+    public function test_warna_tersedia_disimpan_di_form_master_kendaraan(): void
     {
-        Livewire::test(CreateWarnaKendaraan::class)
-            ->fillForm(['nama' => '  biru   dongker ', 'kode_hex' => '#1A237E'])
+        $hitam = $this->warna('Hitam');
+        $putih = $this->warna('Putih');
+
+        Livewire::test(CreateMasterKendaraan::class)
+            ->fillForm([
+                'merek' => 'Honda', 'tipe_model' => 'CR-V', 'tahun_produksi' => 2024,
+                'kondisi' => 'baik', 'status' => 'active', 'warna' => [$hitam->id, $putih->id],
+            ])
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $this->assertDatabaseHas('warna_kendaraan', ['nama' => 'Biru Dongker']);
+        $m = MasterKendaraan::where('tipe_model', 'CR-V')->firstOrFail();
+        $this->assertEqualsCanonicalizing(['Hitam', 'Putih'], $m->warna->pluck('nama')->all());
 
-        // Penulisan berbeda dari warna yang sama tetap ditolak.
-        Livewire::test(CreateWarnaKendaraan::class)
-            ->fillForm(['nama' => 'BIRU DONGKER'])
+        // Warna Tersedia wajib diisi.
+        Livewire::test(CreateMasterKendaraan::class)
+            ->fillForm(['merek' => 'Honda', 'tipe_model' => 'HR-V', 'tahun_produksi' => 2024, 'kondisi' => 'baik', 'status' => 'active', 'warna' => []])
             ->call('create')
-            ->assertHasFormErrors(['nama']);
+            ->assertHasFormErrors(['warna' => 'required']);
     }
 
-    public function test_hapus_warna_yang_dipakai_diblokir(): void
+    public function test_tambah_warna_baru_dari_form_master_dirapikan_dan_tidak_boleh_dobel(): void
     {
-        $dipakai = $this->warna('Hitam');
-        $bebas = $this->warna('Kuning');
-        $this->kendaraan($this->master(), $this->instansi());
+        $this->warna('Hitam');
 
-        Livewire::test(ListWarnaKendaraan::class)
-            ->callAction(TestAction::make('delete')->table($dipakai))
-            ->assertNotified('Data tidak dapat dihapus');
+        // Tambah warna baru lewat tombol + di field Warna Tersedia.
+        Livewire::test(CreateMasterKendaraan::class)
+            ->callAction(TestAction::make('createOption')->schemaComponent('warna'), data: ['nama' => '  biru   dongker ', 'kode_hex' => '#1A237E'])
+            ->assertHasNoFormErrors();
 
-        Livewire::test(ListWarnaKendaraan::class)
-            ->callAction(TestAction::make('delete')->table($bebas));
+        $this->assertDatabaseHas('warna_kendaraan', ['nama' => 'Biru Dongker', 'kode_hex' => '#1A237E']);
 
-        $this->assertModelExists($dipakai);
-        $this->assertModelMissing($bebas);
+        // Penulisan berbeda dari warna yang sudah ada tetap ditolak.
+        Livewire::test(CreateMasterKendaraan::class)
+            ->callAction(TestAction::make('createOption')->schemaComponent('warna'), data: ['nama' => 'HITAM'])
+            ->assertHasActionErrors(['nama']);
+
+        $this->assertSame(1, WarnaKendaraan::where('nama', 'Hitam')->count());
+    }
+
+    public function test_warna_terpakai_tidak_bisa_dihapus_dari_master(): void
+    {
+        $m = $this->master();
+        $this->kendaraan($m, $this->instansi()); // memakai warna Hitam
+        $putih = $this->warna('Putih');
+        $m->warna()->attach($putih);
+
+        Livewire::test(EditMasterKendaraan::class, ['record' => $m->getRouteKey()])
+            ->fillForm(['warna' => [$putih->id]])
+            ->call('save')
+            ->assertHasFormErrors(['warna']);
+
+        $this->assertTrue($m->fresh()->warna->contains('nama', 'Hitam'));
+
+        // Warna yang tidak dipakai boleh dihapus.
+        Livewire::test(EditMasterKendaraan::class, ['record' => $m->getRouteKey()])
+            ->fillForm(['warna' => [$this->warna('Hitam')->id]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertFalse($m->fresh()->warna->contains('nama', 'Putih'));
+    }
+
+    public function test_warna_kendaraan_dinas_harus_dari_warna_tersedia_master(): void
+    {
+        $m = $this->master();
+        $m->warna()->attach([$this->warna('Hitam')->id, $this->warna('Putih')->id]);
+        $merah = $this->warna('Merah'); // tidak tersedia untuk master ini
+
+        Livewire::test(CreateKendaraanDinas::class)
+            ->fillForm(['merek' => 'Toyota'])
+            ->fillForm(['tipe_model' => 'Innova Zenix'])
+            ->fillForm(['master_kendaraan_id' => $m->id])
+            ->assertSchemaStateSet(['warna_kendaraan_id' => null]) // lebih dari satu warna: tidak dipilih otomatis
+            ->fillForm(['nomor_polisi' => 'B 777 X', 'warna_kendaraan_id' => $merah->id, 'instansi_id' => $this->instansi()->id])
+            ->call('create')
+            ->assertHasFormErrors(['warna_kendaraan_id']);
+
+        $this->assertSame(0, KendaraanDinas::count());
     }
 
     public function test_perangkat_daerah_hanya_lihat(): void

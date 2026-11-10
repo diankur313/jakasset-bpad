@@ -24,12 +24,22 @@ use Filament\Schemas\Schema;
  */
 class KendaraanDinasForm
 {
+    /** @return array<int, string> [id warna => nama] yang tersedia untuk master kendaraan ini. */
+    public static function warnaTersedia(mixed $masterKendaraanId): array
+    {
+        if (blank($masterKendaraanId)) {
+            return [];
+        }
+
+        return MasterKendaraan::find($masterKendaraanId)?->warna->pluck('nama', 'id')->all() ?? [];
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
             ->components([
                 Section::make('Data Kendaraan')
-                    ->description('Merek, Tipe / Model, dan Tahun Produksi diambil dari Master Data > Kendaraan; Warna dari Master Data > Warna Kendaraan.')
+                    ->description('Merek, Tipe / Model, Tahun Produksi, dan Warna diambil dari Master Data > Kendaraan.')
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
@@ -59,6 +69,7 @@ class KendaraanDinasForm
                             ->afterStateUpdated(function (Set $set): void {
                                 $set('tipe_model', null);
                                 $set('master_kendaraan_id', null);
+                                $set('warna_kendaraan_id', null);
                             }),
 
                         Select::make('tipe_model')
@@ -74,7 +85,10 @@ class KendaraanDinasForm
                             ->placeholder(fn (Get $get): string => blank($get('merek')) ? 'Pilih merek dahulu' : 'Pilih tipe / model')
                             ->afterStateHydrated(fn (Select $component, ?KendaraanDinas $record) => $component
                                 ->state($record?->masterKendaraan?->tipe_model))
-                            ->afterStateUpdated(fn (Set $set) => $set('master_kendaraan_id', null)),
+                            ->afterStateUpdated(function (Set $set): void {
+                                $set('master_kendaraan_id', null);
+                                $set('warna_kendaraan_id', null);
+                            }),
 
                         Select::make('master_kendaraan_id')
                             ->label('Tahun Produksi')
@@ -88,8 +102,12 @@ class KendaraanDinasForm
                             ->disabled(fn (Get $get): bool => blank($get('tipe_model')))
                             ->placeholder(fn (Get $get): string => blank($get('tipe_model')) ? 'Pilih tipe / model dahulu' : 'Pilih tahun produksi')
                             ->exists('master_kendaraan', 'id')
-                            // Isi Kondisi & Status awal dari master; masih bisa diubah.
+                            // Isi Kondisi & Status awal dari master; masih bisa diubah. Warna dikosongkan
+                            // kecuali master hanya punya satu warna.
                             ->afterStateUpdated(function (?string $state, Set $set): void {
+                                $warna = static::warnaTersedia($state);
+                                $set('warna_kendaraan_id', count($warna) === 1 ? array_key_first($warna) : null);
+
                                 $master = MasterKendaraan::find($state);
 
                                 if (! $master) {
@@ -102,11 +120,15 @@ class KendaraanDinasForm
 
                         Select::make('warna_kendaraan_id')
                             ->label('Warna Kendaraan')
-                            ->relationship('warnaKendaraan', 'nama')
+                            // Hanya warna yang tersedia untuk master kendaraan terpilih.
+                            ->options(fn (Get $get): array => static::warnaTersedia($get('master_kendaraan_id')))
+                            ->in(fn (Get $get): array => array_keys(static::warnaTersedia($get('master_kendaraan_id'))))
                             ->searchable()
-                            ->preload()
                             ->required()
-                            ->helperText('Warna belum ada? Tambahkan di Master Data > Warna Kendaraan.'),
+                            ->disabled(fn (Get $get): bool => blank($get('master_kendaraan_id')))
+                            ->placeholder(fn (Get $get): string => blank($get('master_kendaraan_id')) ? 'Pilih tahun produksi dahulu' : 'Pilih warna')
+                            ->validationMessages(['in' => 'Warna ini tidak tersedia untuk tipe kendaraan yang dipilih.'])
+                            ->helperText('Pilihan warna diatur di Master Data > Kendaraan (Warna Tersedia).'),
 
                         Select::make('kondisi')
                             ->label('Kondisi')

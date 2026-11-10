@@ -21,6 +21,12 @@ class MasterKendaraanInfolist
                         TextEntry::make('tahun_produksi')->label('Tahun Produksi'),
                         TextEntry::make('kondisi')->label('Kondisi')->badge(),
                         TextEntry::make('status')->label('Status')->badge(),
+                        TextEntry::make('warna.nama')
+                            ->label('Warna Tersedia')
+                            ->badge()
+                            ->color('gray')
+                            ->placeholder('Belum ada warna')
+                            ->columnSpanFull(),
                         TextEntry::make('kendaraanDinas.nomor_polisi')
                             ->label('Dipakai oleh Kendaraan Dinas')
                             ->badge()

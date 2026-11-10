@@ -11,7 +11,7 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 5. Akun admin dibuat lewat `AdminUserSeeder` dan nilainya dibaca dari `.env` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`). Jangan menulis kredensial di file lain.
 6. Gunakan bahasa Indonesia untuk dokumentasi dan teks antarmuka (`APP_LOCALE=id`).
 7. Setiap tombol hapus wajib memakai `App\Filament\Support\DependencyGuard` (`deleteAction` / `deleteBulkAction`) dan setiap resource mendeklarasikan `DEPENDENCIES`. Jika menambah tabel yang mereferensikan data lain, tambahkan relasinya ke `DEPENDENCIES` resource induk dan pakai foreign key `restrictOnDelete`.
-8. Menu Perangkat Daerah hanya untuk melihat data. Tambah/ubah/hapus data dilakukan di Master Data > Instansi Pemilik.
+8. Warna kendaraan tidak punya menu sendiri; diatur lewat field Warna Tersedia di form Master Data > Kendaraan. Menu Perangkat Daerah hanya untuk melihat data. Tambah/ubah/hapus data dilakukan di Master Data > Instansi Pemilik.
 9. Jalankan `php artisan test` setelah perubahan dan pastikan semua lolos.
 10. Repositori: https://github.com/diankur313/jakasset-bpad (branch `main`). Commit hanya bila diminta pemilik proyek; satu commit per tahap pekerjaan, pesan commit berbahasa Indonesia.
 11. Prompt yang diawali keterangan **"Added Value"** wajib dicatat juga di `ADDED_VALUE.md` sebagai entri baru (AV-xxx): prompt asli, penjelasan, spesifikasi yang diterapkan, file yang terlibat, dan verifikasi.
@@ -154,3 +154,19 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 6. `WarnaKendaraanSeeder` (selalu dijalankan): 12 warna standar.
 7. 2 test baru (nama warna dirapikan & unik, hapus warna yang dipakai diblokir). `php artisan test`: 18 test lolos. Dicek di browser: menu warna dan dropdown di form Kendaraan Dinas tampil benar.
 8. Bukan prompt "Added Value", jadi tidak dicatat di `ADDED_VALUE.md`. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Warna Kendaraan digabung ke form Master Data > Kendaraan
+
+**Instruksi:**
+> Jadiin satu menu Master - Warna Kendaraan ke dalam form yang berada pada menu http://localhost:8000/admin/master-data/kendaraan. Agar menu menjadi lebih compact dan memudahkan user. Tidak perlu membuat menu master warna berdiri sendiri.
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Menu Master Data > Warna Kendaraan dihapus (`app/Filament/Resources/WarnaKendaraan/`). Tabel `warna_kendaraan` tetap dipakai sebagai daftar warna standar.
+2. Migration `2026_11_10_100006`: pivot `master_kendaraan_warna`. Kombinasi master + warna yang sudah dipakai kendaraan dinas otomatis dimasukkan.
+3. Form Master Data > Kendaraan: field **Warna Tersedia** (pilih banyak, wajib), dengan tombol + untuk menambah warna baru (nama dirapikan & dicek dobel). Warna yang masih dipakai kendaraan dinas bertipe itu tidak bisa dikeluarkan; form menampilkan pesan berisi nomor polisi pemakainya. Warna Tersedia juga tampil di tabel & detail master.
+4. Form Kendaraan Dinas: pilihan warna hanya dari Warna Tersedia master terpilih (divalidasi), dikosongkan saat merek/tipe/tahun berubah, dan terisi otomatis jika master hanya punya satu warna.
+5. `MasterKendaraanSeeder` memberi Warna Tersedia untuk 10 master dummy (`syncWithoutDetaching`, tidak menghapus warna yang diatur pengguna). Master "Toyota Innova Zenix 2.0 G (2025)" milik pengguna belum punya warna.
+6. Test: test menu warna diganti dengan 4 test baru (simpan Warna Tersedia, tambah warna baru via tombol +, warna terpakai tidak bisa dikeluarkan, warna Kendaraan Dinas harus dari master). `php artisan test`: 20 test lolos. Dicek di browser: menu warna hilang, field Warna Tersedia dan modal tambah warna tampil benar.
+7. Catatan: `php artisan db:seed` membuat sesi login admin berakhir, karena `AdminUserSeeder` meng-hash ulang password.
+8. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
