@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\KondisiKendaraan;
-use App\Enums\StatusKendaraan;
 use App\Support\NomorAsset;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -12,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('kendaraan_dinas')]
-#[Fillable(['nomor_polisi', 'master_kendaraan_id', 'warna_kendaraan_id', 'kondisi', 'status', 'instansi_id', 'pegawai_id'])]
+#[Fillable(['nomor_polisi', 'master_kendaraan_id', 'warna_kendaraan_id', 'instansi_id', 'pegawai_id'])]
 class KendaraanDinas extends Model
 {
     /** Jenis asset yang dipakai di nomor asset: YYYY-mm-dd/KENDARAAN/0001. */
@@ -37,8 +35,6 @@ class KendaraanDinas extends Model
     protected function casts(): array
     {
         return [
-            'kondisi' => KondisiKendaraan::class,
-            'status' => StatusKendaraan::class,
         ];
     }
 

@@ -117,10 +117,10 @@ Status menunjukkan ketersediaan operasional kendaraan, terpisah dari **Kondisi**
 
 1. **Enum** `App\Enums\StatusKendaraan` dengan nilai tersimpan `active`, `inactive`, `standby`. Label tampilan dan warna badge diatur di enum ini (`HasLabel`, `HasColor`).
 2. **Master Data > Kendaraan:** field Status wajib diisi, berupa dropdown, dengan default **Active**.
-3. **Asset > Kendaraan Dinas:** field Status wajib diisi, berupa dropdown. Saat Tahun Produksi dipilih, Status **otomatis terisi dari Master Kendaraan**, tetapi masih bisa diubah per kendaraan.
+3. **Asset > Kendaraan Dinas:** Status **tidak bisa dipilih** dan tidak disimpan di tabel `kendaraan_dinas`; nilainya selalu dibaca dari Master Kendaraan dan ditampilkan terkunci di form (lihat Revisi 1).
 4. **Tabel:** Status tampil sebagai badge berwarna, bisa diurutkan, dan ada filter Status di tabel Master Kendaraan dan Kendaraan Dinas.
 5. **Detail:** Status tampil sebagai badge di halaman detail kedua menu.
-6. **Database:** kolom `status` (string 20) di tabel `master_kendaraan` dan `kendaraan_dinas`, di-cast ke enum di model.
+6. **Database:** kolom `status` (string 20) hanya di tabel `master_kendaraan`, di-cast ke enum di model. (Kolom `kendaraan_dinas.status` dihapus di Revisi 1.)
 
 ### File yang terlibat
 
@@ -138,3 +138,18 @@ Status menunjukkan ketersediaan operasional kendaraan, terpisah dari **Kondisi**
 ### Verifikasi
 
 Fitur sudah diuji sejak tahap menu CRUD: `php artisan test` lolos 16 test, termasuk pengecekan Status yang otomatis terisi dari master. Tampilan badge Status sudah dicek di browser pada tabel Master Kendaraan.
+
+### Revisi 1 — Status Kendaraan Dinas mengikuti master (2026-11-10)
+
+**Prompt:**
+> Kondisi dan status pada field form http://localhost:8000/admin/asset/kendaraan-dinas/create tidak boleh dipilih manual, karena nilainya sudah di-state di master kendaraan, untuk mencegah redundant data.
+
+**Penjelasan:** Sebelumnya Status (dan Kondisi) di Kendaraan Dinas terisi otomatis dari master tetapi masih bisa diubah, dan disimpan ulang di tabel `kendaraan_dinas`. Akibatnya nilai yang sama tersimpan dua kali dan bisa tidak sinkron. Sekarang Kendaraan Dinas tidak menyimpan Status/Kondisi sendiri; nilainya selalu diambil dari Master Kendaraan.
+
+**Perubahan:**
+- Migration `2026_11_10_100008`: kolom `kondisi` dan `status` dihapus dari `kendaraan_dinas` (sebelum dihapus, ke-3 data yang ada dicek dan nilainya sama dengan master, jadi tidak ada data yang hilang).
+- Form Kendaraan Dinas: Kondisi & Status tampil terkunci dengan keterangan "Mengikuti Master Data > Kendaraan", terisi saat Tahun Produksi dipilih, dan tidak ikut disimpan.
+- Tabel, detail, dan filter Kondisi/Status Kendaraan Dinas membaca dari relasi `masterKendaraan`.
+- Akibatnya: mengubah Kondisi/Status di Master Kendaraan langsung berlaku untuk semua kendaraan dinas bertipe itu.
+
+**Verifikasi:** `php artisan test`: 26 test lolos, termasuk test baru `test_kondisi_status_kendaraan_dinas_tidak_bisa_dipilih_dan_mengikuti_master`. Dicek di browser pada form ubah kendaraan dinas.

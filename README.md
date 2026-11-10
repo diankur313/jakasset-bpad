@@ -84,7 +84,7 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 |------|-----|--------|------------|
 | Pegawai | `/admin/pegawai` | CRUD | Form: Nama, NIP (18 digit, unik), Jabatan, Golongan (I/a s.d. IV/e), **Instansi** (wajib) |
 | Perangkat Daerah | `/admin/perangkat-daerah` | **Hanya lihat** | Sumber data: Master Data > Instansi Pemilik. Halaman detail menampilkan daftar kendaraan dinas dan pegawai perangkat daerah tersebut. |
-| **Asset** > Kendaraan Dinas | `/admin/asset/kendaraan-dinas` | CRUD (data transaksi) | Nomor Asset dibuat otomatis di backend (tidak ada di form). Form: Nomor Polisi, Merek, Tipe / Model, Tahun Produksi, Warna Kendaraan (dari Warna Tersedia master), Kondisi, Status, Perangkat Daerah (pemilik), Pemegang (pegawai, wajib) |
+| **Asset** > Kendaraan Dinas | `/admin/asset/kendaraan-dinas` | CRUD (data transaksi) | Nomor Asset dibuat otomatis di backend (tidak ada di form). Form: Nomor Polisi, Merek, Tipe / Model, Tahun Produksi, Warna Kendaraan (dari Warna Tersedia master), Kondisi & Status (terkunci, mengikuti master), Perangkat Daerah (pemilik), Pemegang (pegawai, wajib) |
 | **Master Data** > Kendaraan | `/admin/master-data/kendaraan` | CRUD | Form: Merek, Tipe / Model, Tahun Produksi, Kondisi, Status, **Warna Tersedia** (pilih banyak; tombol + untuk menambah warna baru). Kombinasi Merek + Tipe + Tahun harus unik. |
 | **Master Data** > Instansi Pemilik | `/admin/master-data/instansi` | CRUD | Form: Nama Instansi (unik), Singkatan, Alamat |
 
@@ -97,7 +97,7 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 
 ### Alur data transaksi Kendaraan Dinas
 - **Merek → Tipe / Model → Tahun Produksi** adalah dropdown berjenjang dari Master Data > Kendaraan. Yang disimpan hanya `master_kendaraan_id`.
-- Saat Tahun Produksi dipilih, **Kondisi** dan **Status** otomatis terisi dari master, tetapi masih bisa diubah per kendaraan.
+- **Kondisi** dan **Status** tidak bisa dipilih dan tidak disimpan di `kendaraan_dinas`; nilainya selalu dibaca dari Master Kendaraan (tampil terkunci di form, juga di tabel, detail, dan filter). Mengubah master langsung berlaku untuk semua kendaraan dinas bertipe itu.
 - **Warna Kendaraan** (wajib) dipilih dari **Warna Tersedia** milik master kendaraan terpilih, bukan diketik bebas. Jika master hanya punya satu warna, warna terisi otomatis.
 
 ### Warna kendaraan
@@ -144,7 +144,8 @@ master_kendaraan_warna
                    primary: (master_kendaraan_id, warna_kendaraan_id); Warna Tersedia per master
 kendaraan_dinas    id, nomor_asset (unik, otomatis), nomor_polisi (unik),
                    master_kendaraan_id → master_kendaraan,
-                   warna_kendaraan_id → warna_kendaraan, kondisi, status, instansi_id → instansi,
+                   warna_kendaraan_id → warna_kendaraan, instansi_id → instansi,
+                   (kondisi & status dibaca dari master_kendaraan, tidak disimpan di sini)
                    pegawai_id → pegawai (wajib di form), timestamps
                    semua foreign key: ON DELETE RESTRICT
 nomor_asset_sequences
@@ -234,3 +235,4 @@ php artisan test
 | 2026-11-10 | Master Data > Warna Kendaraan (tabel `warna_kendaraan`, seeder 12 warna standar). Kolom teks `kendaraan_dinas.warna` diganti FK `warna_kendaraan_id` (`restrictOnDelete`), data lama dipindahkan otomatis oleh migration. 2 test baru (total 18). | Claude Code (Opus 5.5) |
 | 2026-11-10 | Menu Master Data > Warna Kendaraan dihapus; warna diatur lewat field **Warna Tersedia** di form Master Data > Kendaraan (pivot `master_kendaraan_warna`). Warna di Kendaraan Dinas dibatasi ke Warna Tersedia master. Total 20 test. | Claude Code (Opus 5.5) |
 | 2026-11-10 | Relasi Pegawai → Instansi (`pegawai.instansi_id`, wajib di form). Pemegang di Kendaraan Dinas wajib dan dibatasi ke pegawai perangkat daerah pemilik. Hapus instansi dicek terhadap pegawai. Detail Perangkat Daerah menampilkan pegawai. Total 25 test. | Claude Code (Opus 5.5) |
+| 2026-11-10 | Kolom `kondisi` & `status` dihapus dari `kendaraan_dinas`; nilainya selalu dibaca dari Master Kendaraan dan tampil terkunci di form (AV-002 Revisi 1). Total 26 test. | Claude Code (Opus 5.5) |

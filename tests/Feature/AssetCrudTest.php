@@ -75,8 +75,6 @@ class AssetCrudTest extends TestCase
             'nomor_polisi' => $nopol,
             'master_kendaraan_id' => $m->id,
             'warna_kendaraan_id' => $this->warna()->id,
-            'kondisi' => KondisiKendaraan::Baik,
-            'status' => StatusKendaraan::Active,
             'instansi_id' => $i->id,
             'pegawai_id' => $p?->id,
         ]);
@@ -234,7 +232,7 @@ class AssetCrudTest extends TestCase
             ->fillForm(['merek' => 'Toyota'])
             ->fillForm(['tipe_model' => 'Innova Zenix'])
             ->fillForm(['master_kendaraan_id' => $m->id])
-            // kondisi & status otomatis terisi dari master; warna terisi karena master hanya punya satu warna
+            // kondisi & status ditampilkan dari master; warna terisi karena master hanya punya satu warna
             ->assertSchemaStateSet([
                 'kondisi' => KondisiKendaraan::RusakRingan,
                 'status' => StatusKendaraan::Standby,
@@ -249,9 +247,43 @@ class AssetCrudTest extends TestCase
         $this->assertSame($m->id, $k->master_kendaraan_id);
         $this->assertMatchesRegularExpression('#^\d{4}-\d{2}-\d{2}/KENDARAAN/\d{4}$#', $k->nomor_asset);
 
-        // Halaman edit memuat ulang Merek & Tipe dari relasi master.
+        // Halaman edit memuat ulang Merek, Tipe, Kondisi & Status dari relasi master.
         Livewire::test(EditKendaraanDinas::class, ['record' => $k->getRouteKey()])
-            ->assertSchemaStateSet(['merek' => 'Toyota', 'tipe_model' => 'Innova Zenix', 'master_kendaraan_id' => $m->id]);
+            ->assertSchemaStateSet([
+                'merek' => 'Toyota', 'tipe_model' => 'Innova Zenix', 'master_kendaraan_id' => $m->id,
+                'kondisi' => KondisiKendaraan::RusakRingan, 'status' => StatusKendaraan::Standby,
+            ]);
+    }
+
+    public function test_kondisi_status_kendaraan_dinas_tidak_bisa_dipilih_dan_mengikuti_master(): void
+    {
+        $m = $this->master(['kondisi' => KondisiKendaraan::Baik, 'status' => StatusKendaraan::Active]);
+        $k = $this->kendaraan($m, $this->instansi(), $this->pegawai());
+
+        // Field terkunci di form tambah & ubah.
+        Livewire::test(CreateKendaraanDinas::class)
+            ->assertFormFieldDisabled('kondisi')
+            ->assertFormFieldDisabled('status');
+
+        Livewire::test(EditKendaraanDinas::class, ['record' => $k->getRouteKey()])
+            ->assertFormFieldDisabled('kondisi')
+            ->assertFormFieldDisabled('status');
+
+        // Tidak ada kolom kondisi/status di tabel kendaraan_dinas: nilainya dibaca dari master.
+        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumns('kendaraan_dinas', ['kondisi']));
+        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumns('kendaraan_dinas', ['status']));
+
+        // Mengubah master langsung tercermin di kendaraan dinas.
+        $m->update(['kondisi' => KondisiKendaraan::RusakBerat, 'status' => StatusKendaraan::Inactive]);
+        $this->assertSame(KondisiKendaraan::RusakBerat, $k->fresh()->masterKendaraan->kondisi);
+
+        Livewire::test(ListKendaraanDinas::class)
+            ->filterTable('status', StatusKendaraan::Inactive->value)
+            ->assertCanSeeTableRecords([$k]);
+
+        Livewire::test(ListKendaraanDinas::class)
+            ->filterTable('status', StatusKendaraan::Active->value)
+            ->assertCanNotSeeTableRecords([$k]);
     }
 
     public function test_hapus_master_kendaraan_yang_dipakai_diblokir_dengan_alert(): void

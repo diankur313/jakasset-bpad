@@ -188,3 +188,18 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 8. `PegawaiSeeder`: 10 pegawai dummy dibagi ke Disdik (4), Dinkes (3), PUPR (3).
 9. 5 test baru (pegawai wajib punya instansi, pemegang wajib & harus dari instansi pemilik, ganti perangkat daerah mengosongkan pemegang, pegawai pemegang tidak bisa pindah instansi, hapus instansi yang punya pegawai diblokir). `php artisan test`: 25 test lolos. Dicek di browser.
 10. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Kondisi & Status Kendaraan Dinas mengikuti master (AV-002 Revisi 1)
+
+**Instruksi:**
+> Kondisi dan status pada field form http://localhost:8000/admin/asset/kendaraan-dinas/create tidak boleh dipilih manual, karena nilainya sudah di-state di master kendaraan, untuk mencegah redundant data. (dengan screenshot field Kondisi & Status)
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Sebelum mengubah skema, ke-3 kendaraan dinas yang ada dicek: Kondisi/Status semuanya sama dengan masternya, jadi tidak ada data yang hilang.
+2. Migration `2026_11_10_100008`: kolom `kondisi` dan `status` dihapus dari `kendaraan_dinas` (bisa di-rollback; nilai diisi ulang dari master).
+3. Model `KendaraanDinas`: `kondisi`/`status` dihapus dari `$fillable` dan cast.
+4. Form Kendaraan Dinas: Kondisi & Status jadi field terkunci (`disabled`, `dehydrated(false)`) yang menampilkan nilai master. Tabel, detail, dan filter membaca dari `masterKendaraan`.
+5. Test: helper & test berjenjang disesuaikan, 1 test baru (field terkunci, kolom tidak ada, perubahan master tercermin, filter lewat master). `php artisan test`: 26 test lolos. Dicek di browser.
+6. Field Status tercatat sebagai AV-002, jadi `ADDED_VALUE.md` diperbarui dengan "Revisi 1".
+7. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.

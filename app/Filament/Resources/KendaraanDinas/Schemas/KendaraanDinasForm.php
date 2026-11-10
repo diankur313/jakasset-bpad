@@ -117,20 +117,14 @@ class KendaraanDinasForm
                             ->live()
                             ->placeholder('Pilih tahun produksi (sesuai tipe)')
                             ->exists('master_kendaraan', 'id')
-                            // Isi Kondisi & Status awal dari master; masih bisa diubah. Warna dikosongkan
-                            // kecuali master hanya punya satu warna.
+                            // Tampilkan Kondisi & Status dari master. Warna dikosongkan kecuali master hanya punya satu warna.
                             ->afterStateUpdated(function (?string $state, Set $set): void {
                                 $warna = static::warnaTersedia($state);
                                 $set('warna_kendaraan_id', count($warna) === 1 ? array_key_first($warna) : null);
 
                                 $master = MasterKendaraan::find($state);
-
-                                if (! $master) {
-                                    return;
-                                }
-
-                                $set('kondisi', $master->kondisi);
-                                $set('status', $master->status);
+                                $set('kondisi', $master?->kondisi);
+                                $set('status', $master?->status);
                             }),
 
                         Select::make('warna_kendaraan_id')
@@ -144,15 +138,27 @@ class KendaraanDinasForm
                             ->validationMessages(['in' => 'Warna ini tidak tersedia untuk tipe kendaraan yang dipilih.'])
                             ->helperText('Pilihan warna diatur di Master Data > Kendaraan (Warna Tersedia).'),
 
+                        // Kondisi & Status hanya ditampilkan (tidak bisa dipilih, tidak disimpan):
+                        // nilainya selalu dibaca dari Master Kendaraan agar tidak ada data ganda.
                         Select::make('kondisi')
                             ->label('Kondisi')
                             ->options(KondisiKendaraan::class)
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('Mengikuti master kendaraan')
+                            ->afterStateHydrated(fn (Select $component, ?KendaraanDinas $record) => $component
+                                ->state($record?->masterKendaraan?->kondisi))
+                            ->helperText('Mengikuti Master Data > Kendaraan.'),
 
                         Select::make('status')
                             ->label('Status')
                             ->options(StatusKendaraan::class)
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('Mengikuti master kendaraan')
+                            ->afterStateHydrated(fn (Select $component, ?KendaraanDinas $record) => $component
+                                ->state($record?->masterKendaraan?->status))
+                            ->helperText('Mengikuti Master Data > Kendaraan.'),
                     ]),
 
                 Section::make('Kepemilikan & Pemegang')

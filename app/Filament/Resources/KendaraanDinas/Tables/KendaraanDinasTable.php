@@ -25,8 +25,8 @@ class KendaraanDinasTable
             TextColumn::make('masterKendaraan.tipe_model')->label('Tipe / Model')->searchable(),
             TextColumn::make('masterKendaraan.tahun_produksi')->label('Tahun')->sortable(),
             TextColumn::make('warnaKendaraan.nama')->label('Warna')->searchable()->placeholder('-')->toggleable(),
-            TextColumn::make('kondisi')->label('Kondisi')->badge()->sortable(),
-            TextColumn::make('status')->label('Status')->badge()->sortable(),
+            TextColumn::make('masterKendaraan.kondisi')->label('Kondisi')->badge()->sortable(),
+            TextColumn::make('masterKendaraan.status')->label('Status')->badge()->sortable(),
             $withInstansi ? TextColumn::make('instansi.nama')->label('Perangkat Daerah')->searchable()->sortable()->wrap() : null,
             TextColumn::make('pegawai.nama')->label('Pemegang')->searchable()->placeholder('-')->toggleable(),
         ]));
@@ -49,8 +49,21 @@ class KendaraanDinasTable
                     ->relationship('warnaKendaraan', 'nama')
                     ->searchable()
                     ->preload(),
-                SelectFilter::make('kondisi')->label('Kondisi')->options(KondisiKendaraan::class),
-                SelectFilter::make('status')->label('Status')->options(StatusKendaraan::class),
+                // Kondisi & Status disaring lewat Master Kendaraan.
+                SelectFilter::make('kondisi')
+                    ->label('Kondisi')
+                    ->options(KondisiKendaraan::class)
+                    ->query(fn ($query, array $data) => $query->when(
+                        $data['value'] ?? null,
+                        fn ($q, $value) => $q->whereHas('masterKendaraan', fn ($m) => $m->where('kondisi', $value)),
+                    )),
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->options(StatusKendaraan::class)
+                    ->query(fn ($query, array $data) => $query->when(
+                        $data['value'] ?? null,
+                        fn ($q, $value) => $q->whereHas('masterKendaraan', fn ($m) => $m->where('status', $value)),
+                    )),
             ])
             ->recordActions([
                 ViewAction::make(),
