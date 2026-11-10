@@ -4,6 +4,8 @@ Aplikasi panel admin berbasis **Laravel + Filament**.
 
 > **Wajib:** setiap penambahan atau pengurangan teknis (package, versi, database, konfigurasi, fitur, AI/model) harus diperbarui di file ini dan dicatat di bagian [Riwayat Perubahan Teknis](#riwayat-perubahan-teknis). Instruksi kerja dicatat di [`AGENTS.md`](AGENTS.md).
 
+**Repositori:** https://github.com/diankur313/jakasset-bpad (branch `main`)
+
 ---
 
 ## 1. AI yang Digunakan
@@ -183,3 +185,4 @@ php artisan test
 |------------|-----------|------|
 | 2026-11-10 | Inisialisasi proyek: Laravel 13.40.0, Filament 5.11.2, SQLite, panel `admin`, seeder akun admin, locale `id`. | Claude Code (Opus 5.5) |
 | 2026-11-10 | Menu CRUD: Asset > Kendaraan Dinas, Pegawai, Master Data > Kendaraan & Instansi Pemilik; menu Perangkat Daerah (read-only). 4 tabel baru dengan FK `restrictOnDelete`, enum Kondisi/Status, `DependencyGuard` (alert hapus berdependensi), `InstansiSeeder`, 11 feature test. | Claude Code (Opus 5.5) |
+| 2026-11-10 | Inisialisasi git (branch `main`) dan push ke GitHub `diankur313/jakasset-bpad`. History disusun per tahap pengerjaan. | Claude Code (Opus 5.5) |

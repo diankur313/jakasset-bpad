@@ -13,6 +13,7 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 7. Setiap tombol hapus wajib memakai `App\Filament\Support\DependencyGuard` (`deleteAction` / `deleteBulkAction`) dan setiap resource mendeklarasikan `DEPENDENCIES`. Jika menambah tabel yang mereferensikan data lain, tambahkan relasinya ke `DEPENDENCIES` resource induk dan pakai foreign key `restrictOnDelete`.
 8. Menu Perangkat Daerah hanya untuk melihat data. Tambah/ubah/hapus data dilakukan di Master Data > Instansi Pemilik.
 9. Jalankan `php artisan test` setelah perubahan dan pastikan semua lolos.
+10. Repositori: https://github.com/diankur313/jakasset-bpad (branch `main`). Commit hanya bila diminta pemilik proyek; satu commit per tahap pekerjaan, pesan commit berbahasa Indonesia.
 
 ## Log Pengerjaan
 
@@ -64,3 +65,17 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 6. `InstansiSeeder`: Dinas Pendidikan, Dinas Kesehatan, Dinas Pekerjaan Umum dan Penataan Ruang.
 7. `tests/Feature/AssetCrudTest.php`: 11 test (halaman terbuka, create/edit, validasi, dropdown berjenjang, alert hapus tunggal & massal, Perangkat Daerah read-only). `php artisan test`: 13 test lolos.
 8. Cek di browser: alert hapus master kendaraan yang dipakai, form edit kendaraan dinas, dan detail perangkat daerah tampil benar. Data contoh untuk pengecekan sudah dihapus lagi.
+
+### 2026-11-10 — Commit dan push ke GitHub
+
+**Instruksi:**
+> Commit dan push ke repo, sertakan history dari awal pembuatan project. https://github.com/diankur313/jakasset-bpad.git
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. `git init -b main`. File yang di-ignore (`.env`, `vendor/`, `database/database.sqlite`, aset Filament di `public/`) tidak ikut di-commit.
+2. History disusun per tahap pengerjaan:
+   - Commit 1, inisialisasi project: kondisi setelah tahap pertama. `AGENTS.md`, `README.md`, `DatabaseSeeder.php`, dan `AdminPanelProvider.php` memakai versi sebelum menu CRUD ditambahkan.
+   - Commit 2, menu CRUD: semua file dari tahap kedua.
+   - Commit 3: catatan repositori di `AGENTS.md` dan `README.md`.
+3. Remote `origin` = `https://github.com/diankur313/jakasset-bpad.git`, lalu push branch `main`.
