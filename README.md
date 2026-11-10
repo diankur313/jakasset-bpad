@@ -92,7 +92,7 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 | Field | Pilihan | File |
 |-------|---------|------|
 | Kondisi | Baik, Rusak Ringan, Rusak Berat | `app/Enums/KondisiKendaraan.php` |
-| Status | Active, Inactive, Standby | `app/Enums/StatusKendaraan.php` |
+| Status (Added Value AV-002) | Active, Inactive, Standby | `app/Enums/StatusKendaraan.php` |
 | Golongan | I/a, I/b, ..., IV/e | `App\Models\Pegawai::GOLONGAN` |
 
 ### Alur data transaksi Kendaraan Dinas
@@ -213,3 +213,4 @@ php artisan test
 | 2026-11-10 | Data dummy: `PegawaiSeeder` (10 pegawai) dan `MasterKendaraanSeeder` (10 master kendaraan), dipanggil dari `DatabaseSeeder` hanya saat `APP_ENV=local`. | Claude Code (Opus 5.5) |
 | 2026-11-10 | **Added Value AV-001:** Nomor Asset otomatis di Kendaraan Dinas (`YYYY-mm-dd/KENDARAAN/0001`), tabel `nomor_asset_sequences`, `APP_TIMEZONE=Asia/Jakarta`, file `ADDED_VALUE.md`, 3 test baru (total 16). | Claude Code (Opus 5.5) |
 | 2026-11-10 | AV-001 Revisi 1: field Nomor Asset dihapus dari form Kendaraan Dinas (tetap dibuat otomatis di backend, tampil di tabel & detail). | Claude Code (Opus 5.5) |
+| 2026-11-10 | Field Status (Active, Inactive, Standby) dicatat sebagai Added Value AV-002 di `ADDED_VALUE.md`. Tidak ada perubahan kode. | Claude Code (Opus 5.5) |

@@ -11,6 +11,7 @@ Aturan: setiap prompt baru yang diawali "Added Value" wajib ditambahkan ke file 
 | Kode | Tanggal | Menu | Fitur |
 |------|---------|------|-------|
 | AV-001 | 2026-11-10 | Asset > Kendaraan Dinas | Nomor Asset otomatis |
+| AV-002 | 2026-11-10 | Master Data > Kendaraan, Asset > Kendaraan Dinas | Field Status (Active, Inactive, Standby) |
 
 ---
 
@@ -88,3 +89,52 @@ Contoh hasil: **`2026-11-10/KENDARAAN/0001`**
 - Test `test_nomor_asset_tidak_bisa_diubah` sekarang memastikan field tidak ada di form tambah maupun ubah.
 
 **Verifikasi:** `php artisan test`: 16 test lolos. Di browser, halaman tambah Kendaraan Dinas hanya menampilkan "Nomor Polisi", tanpa Nomor Asset.
+
+---
+
+## AV-002 — Field Status Kendaraan (Active, Inactive, Standby)
+
+**Tanggal:** 2026-11-10
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+### Prompt asli
+
+> Pada form Status yang berisi Active, Inactive, Standby catat itu sebagai added value.
+
+### Penjelasan prompt
+
+Field **Status** dengan pilihan **Active / Inactive / Standby** ditetapkan sebagai fitur Added Value. Fitur ini sudah dibuat pada tahap menu CRUD (berasal dari instruksi Master Data > Kendaraan), lalu sekarang dicatat secara resmi di file ini. **Tidak ada perubahan kode pada entri ini.**
+
+Status menunjukkan ketersediaan operasional kendaraan, terpisah dari **Kondisi** (Baik / Rusak Ringan / Rusak Berat) yang menunjukkan keadaan fisiknya.
+
+| Status | Arti | Warna badge |
+|--------|------|-------------|
+| Active | Kendaraan sedang dipakai untuk operasional | Hijau (`success`) |
+| Inactive | Kendaraan tidak dipakai / tidak dioperasikan | Abu-abu (`gray`) |
+| Standby | Kendaraan siap pakai tetapi sedang tidak ditugaskan | Biru (`info`) |
+
+### Spesifikasi yang diterapkan
+
+1. **Enum** `App\Enums\StatusKendaraan` dengan nilai tersimpan `active`, `inactive`, `standby`. Label tampilan dan warna badge diatur di enum ini (`HasLabel`, `HasColor`).
+2. **Master Data > Kendaraan:** field Status wajib diisi, berupa dropdown, dengan default **Active**.
+3. **Asset > Kendaraan Dinas:** field Status wajib diisi, berupa dropdown. Saat Tahun Produksi dipilih, Status **otomatis terisi dari Master Kendaraan**, tetapi masih bisa diubah per kendaraan.
+4. **Tabel:** Status tampil sebagai badge berwarna, bisa diurutkan, dan ada filter Status di tabel Master Kendaraan dan Kendaraan Dinas.
+5. **Detail:** Status tampil sebagai badge di halaman detail kedua menu.
+6. **Database:** kolom `status` (string 20) di tabel `master_kendaraan` dan `kendaraan_dinas`, di-cast ke enum di model.
+
+### File yang terlibat
+
+| File | Peran |
+|------|-------|
+| `app/Enums/StatusKendaraan.php` | Definisi pilihan, label, dan warna |
+| `app/Models/MasterKendaraan.php`, `app/Models/KendaraanDinas.php` | Cast kolom `status` ke enum |
+| `app/Filament/Resources/MasterKendaraan/Schemas/MasterKendaraanForm.php` | Dropdown Status (default Active) |
+| `app/Filament/Resources/KendaraanDinas/Schemas/KendaraanDinasForm.php` | Dropdown Status, terisi otomatis dari master |
+| `app/Filament/Resources/MasterKendaraan/Tables/MasterKendaraanTable.php`, `app/Filament/Resources/KendaraanDinas/Tables/KendaraanDinasTable.php` | Badge & filter Status |
+| `database/migrations/2026_11_10_100001_create_master_kendaraan_table.php`, `database/migrations/2026_11_10_100003_create_kendaraan_dinas_table.php` | Kolom `status` |
+| `database/seeders/MasterKendaraanSeeder.php` | Data dummy dengan status bervariasi |
+| `tests/Feature/AssetCrudTest.php` | Status terisi otomatis dari master (`test_tambah_kendaraan_dinas_dengan_pilihan_berjenjang`) |
+
+### Verifikasi
+
+Fitur sudah diuji sejak tahap menu CRUD: `php artisan test` lolos 16 test, termasuk pengecekan Status yang otomatis terisi dari master. Tampilan badge Status sudah dicek di browser pada tabel Master Kendaraan.

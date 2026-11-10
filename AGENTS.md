@@ -126,3 +126,15 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 3. Test diperbarui: field dipastikan tidak ada di form tambah & ubah. `php artisan test`: 16 test lolos. Dicek di browser: halaman tambah tidak lagi menampilkan Nomor Asset.
 4. `ADDED_VALUE.md` diperbarui: spesifikasi AV-001 disesuaikan dan entri "Revisi 1" ditambahkan.
 5. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Added Value AV-002: Field Status kendaraan
+
+**Instruksi:**
+> Pada form Status yang berisi Active, Inactive, Standby catat itu sebagai added value.
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Field Status (enum `StatusKendaraan`: Active, Inactive, Standby) sudah ada sejak tahap menu CRUD di form Master Data > Kendaraan dan Asset > Kendaraan Dinas. Tidak ada perubahan kode.
+2. `ADDED_VALUE.md`: entri AV-002 berisi prompt asli, arti tiap status, spesifikasi, file yang terlibat, dan verifikasi. Tabel daftar Added Value diperbarui.
+3. `README.md`: baris Status di tabel enum ditandai AV-002, riwayat perubahan ditambah.
+4. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
