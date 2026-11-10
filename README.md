@@ -32,6 +32,7 @@ Aplikasi panel admin berbasis **Laravel + Filament**.
 | endroid/qr-code | 6.0.9     | Membuat QR code label aset (AV-003) |
 | barryvdh/laravel-dompdf | 3.1.2 (dompdf 3.1.6) | Membuat PDF label aset (AV-003) |
 | khanamiryan/qrcode-detector-decoder | 2.x (dev) | Membaca QR di test, memastikan QR berlogo terbaca |
+| laravel/sanctum | 4.3.3 | Token autentikasi REST API (Bearer) |
 
 ### Frontend / Build
 | Komponen            | Versi   |
@@ -125,6 +126,14 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 - Isi label: QR berisi Nomor Asset dengan logo BPAD di tengah, lalu Merek, Tipe / Model, Tahun Produksi, Nomor Polisi, dan Nomor Asset.
 - Kode: `app/Support/LabelAsset.php`, view `resources/views/pdf/`, logo `resources/images/logo-bpad.png`. Detail di [`ADDED_VALUE.md`](ADDED_VALUE.md).
 
+### REST API
+- Semua fungsi panel admin tersedia sebagai REST API di `/api/v1` (36 endpoint): auth, referensi, Kendaraan Dinas (CRUD, hapus massal, label QR satuan & batch), Pegawai, Master Kendaraan (+ Warna Tersedia), Warna Kendaraan (lihat & tambah), Instansi Pemilik, dan Perangkat Daerah (read-only).
+- Autentikasi: Laravel Sanctum personal access token. Login `POST /api/v1/auth/login` dengan akun panel admin (hanya `@jakasset-mail.com`), lalu kirim header `Authorization: Bearer {token}`.
+- Aturan bisnis sama dengan panel admin: request API memakai fungsi validasi dari form Filament, dan hapus memakai `DependencyGuard::dependents` (409 bila data masih dipakai).
+- `PUT` = ubah penuh, `PATCH` = ubah sebagian. Daftar data mendukung `page`, `per_page` (maks. 100), `search`, `sort`, dan filter.
+- Batas request: login 10/menit, endpoint lain 120/menit. Semua respons `/api` berupa JSON, pesan berbahasa Indonesia.
+- Panduan lengkap step by step dan fungsi tiap endpoint: [`API.md`](API.md).
+
 ### Penghapusan data & dependensi
 Semua tombol hapus memakai `app/Filament/Support/DependencyGuard.php`:
 - **Hapus satu data:** jika data masih dipakai, modal berubah menjadi alert **"Data tidak dapat dihapus"** berisi jumlah dan contoh nomor polisi yang memakai data itu, dan tombol hapus disembunyikan. Jika tidak dipakai, muncul konfirmasi hapus biasa.
@@ -160,6 +169,8 @@ kendaraan_dinas    id, nomor_asset (unik, otomatis), nomor_polisi (unik),
 nomor_asset_sequences
                    id, jenis_asset, tanggal, nomor_terakhir, timestamps
                    unik: (jenis_asset, tanggal); penghitung running number nomor asset
+personal_access_tokens
+                   token REST API (Laravel Sanctum), dihapus saat logout
 ```
 
 ### Seeder
@@ -189,6 +200,11 @@ app/
 │   └── Support/DependencyGuard.php         # aksi hapus + cek dependensi
 ├── Support/NomorAsset.php                  # generator nomor asset (AV-001)
 ├── Support/LabelAsset.php                  # QR + PDF label aset (AV-003)
+├── Http/
+│   ├── Controllers/Api/                    # controller REST API (/api/v1)
+│   ├── Requests/Api/                       # validasi request API (aturan sama dengan form)
+│   ├── Resources/                          # format JSON respons API
+│   └── Middleware/PaksaResponsJson.php     # semua respons /api berupa JSON
 ├── Models/                                 # User, Instansi, MasterKendaraan, WarnaKendaraan, Pegawai, KendaraanDinas
 └── Providers/Filament/AdminPanelProvider.php
 database/
@@ -201,10 +217,13 @@ database/
     ├── WarnaKendaraanSeeder.php
     ├── PegawaiSeeder.php                   # dummy, hanya local
     └── MasterKendaraanSeeder.php           # dummy, hanya local
+routes/api.php                              # route REST API
 tests/Feature/AssetCrudTest.php             # test CRUD & alert hapus
+tests/Feature/ApiTest.php                   # test REST API
 .claude/launch.json                         # konfigurasi dev server untuk Claude Code
 AGENTS.md                                   # log instruksi & pengerjaan
 ADDED_VALUE.md                              # catatan fitur Added Value
+API.md                                      # dokumentasi REST API
 CLAUDE.md                                   # merujuk ke AGENTS.md (untuk Claude Code)
 README.md                                   # spesifikasi teknis (file ini)
 ```
@@ -247,3 +266,4 @@ php artisan test
 | 2026-11-10 | Relasi Pegawai → Instansi (`pegawai.instansi_id`, wajib di form). Pemegang di Kendaraan Dinas wajib dan dibatasi ke pegawai perangkat daerah pemilik. Hapus instansi dicek terhadap pegawai. Detail Perangkat Daerah menampilkan pegawai. Total 25 test. | Claude Code (Opus 5.5) |
 | 2026-11-10 | Kolom `kondisi` & `status` dihapus dari `kendaraan_dinas`; nilainya selalu dibaca dari Master Kendaraan dan tampil terkunci di form (AV-002 Revisi 1). Total 26 test. | Claude Code (Opus 5.5) |
 | 2026-11-10 | **Added Value AV-003:** download label QR Kendaraan Dinas (satuan PDF 90×45 mm & batch A4). Package baru `endroid/qr-code` 6.0.9, `barryvdh/laravel-dompdf` 3.1.2; dev `khanamiryan/qrcode-detector-decoder`. Logo `resources/images/logo-bpad.png`. Total 29 test. | Claude Code (Opus 5.5) |
+| 2026-11-10 | REST API untuk semua fungsi di `/api/v1` (36 endpoint) dengan `laravel/sanctum` 4.3.3 (token Bearer, tabel `personal_access_tokens`). Dokumentasi `API.md`. Test memory limit dinaikkan ke 512M di `phpunit.xml` (render PDF di banyak test). 11 test baru, total 40 test. | Claude Code (Opus 5.5) |

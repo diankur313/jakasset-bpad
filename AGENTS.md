@@ -219,3 +219,28 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 6. 3 test baru (QR berlogo terbaca, download satuan, batch 11 data = 2 halaman). `php artisan test`: 29 test lolos. PDF dicek visual; tombol batch dicek di browser.
 7. Bug yang ditemukan saat test dan sudah diperbaiki: download satuan error karena `collect([$record])` bukan koleksi Eloquent.
 8. Dicatat sebagai AV-003 di `ADDED_VALUE.md`. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Server lokal mati
+
+**Instruksi:**
+> Gw gabisa buka URL-nya, cek error.
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Penyebabnya bukan error kode: dev server `php artisan serve` sudah berhenti, jadi port 8000 kosong. Server dijalankan ulang, halaman login kembali normal dan log bersih.
+
+### 2026-11-10 — REST API semua fungsi + API.md
+
+**Instruksi:**
+> Buatin RESTful API-nya pada kesemua fungsi, kemudian di-list ke dalam file API.md (buat baru) step by step cara penggunaannya dan masing-masing endpoint fungsinya untuk apa.
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. `php artisan install:api`: `laravel/sanctum` 4.3.3, `routes/api.php`, migration `personal_access_tokens`, `config/sanctum.php`. `User` memakai `HasApiTokens`.
+2. 36 endpoint di `/api/v1`: login/me/logout, referensi enum, CRUD + hapus massal untuk Kendaraan Dinas, Pegawai, Master Kendaraan (+ Warna Tersedia), Instansi Pemilik; Warna Kendaraan (lihat & tambah); Perangkat Daerah read-only (+ daftar kendaraan & pegawainya); label QR satuan & batch (PDF).
+3. Login hanya untuk akun `@jakasset-mail.com` (sama dengan panel admin), dibatasi 10/menit; endpoint lain 120/menit.
+4. Aturan bisnis tidak diduplikasi: request API memakai `PegawaiForm::cegahPindahInstansi`, `MasterKendaraanForm::cegahHapusWarnaTerpakai`, `KendaraanDinasForm::warnaTersedia`/`pegawaiInstansi`, dan hapus memakai `DependencyGuard::dependents` (409 + daftar dependensi; hapus massal melewati data terpakai). Cek warna dobel dipindah ke `MasterKendaraanForm::cegahWarnaDobel()` supaya dipakai form & API.
+5. `PATCH` melengkapi field yang tidak dikirim dari data lama sebelum validasi, jadi aturan antar-field tetap berlaku. Nomor Asset, Kondisi, dan Status tidak bisa dikirim lewat API.
+6. Semua respons `/api` JSON (middleware `PaksaResponsJson`), pesan error 401/404/405/422/429 berbahasa Indonesia.
+7. `tests/Feature/ApiTest.php`: 11 test. Suite penuh sempat kehabisan memori (128 MB) karena render PDF dompdf di banyak test, jadi `phpunit.xml` diberi `memory_limit=512M`. `php artisan test`: 40 test lolos. Dicek juga di server lokal: login, daftar kendaraan dinas, label PDF, logout, dan 401.
+8. Dokumentasi: `API.md` (baru), `README.md`. Bukan prompt "Added Value", jadi tidak dicatat di `ADDED_VALUE.md`. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.

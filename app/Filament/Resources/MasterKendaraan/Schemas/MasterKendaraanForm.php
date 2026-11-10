@@ -27,11 +27,7 @@ class MasterKendaraanForm
                 ->maxLength(50)
                 ->dehydrateStateUsing(fn (?string $state): string => WarnaKendaraan::rapikan($state))
                 // Dicek setelah dirapikan, jadi "hitam", "HITAM", dan "Hitam" dianggap sama.
-                ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
-                    if (WarnaKendaraan::where('nama', WarnaKendaraan::rapikan($value))->exists()) {
-                        $fail('Warna ini sudah ada. Pilih dari daftar Warna Tersedia.');
-                    }
-                })
+                ->rule(fn (): Closure => static::cegahWarnaDobel())
                 ->placeholder('Hitam')
                 ->helperText('Penulisan otomatis dirapikan, misalnya "biru  dongker" menjadi "Biru Dongker".'),
             ColorPicker::make('kode_hex')
@@ -40,6 +36,19 @@ class MasterKendaraanForm
                 ->regex('/^#[0-9A-Fa-f]{6}$/')
                 ->helperText('Opsional.'),
         ];
+    }
+
+    /**
+     * Nama warna dicek setelah dirapikan, jadi "hitam", "HITAM", dan "Hitam" dianggap sama.
+     * Dipakai juga oleh REST API (POST /api/v1/warna-kendaraan).
+     */
+    public static function cegahWarnaDobel(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            if (WarnaKendaraan::where('nama', WarnaKendaraan::rapikan($value))->exists()) {
+                $fail('Warna ini sudah ada. Pilih dari daftar Warna Tersedia.');
+            }
+        };
     }
 
     /**
