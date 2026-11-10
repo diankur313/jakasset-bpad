@@ -26,7 +26,7 @@ class KendaraanDinasRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('nomor_polisi')
-            ->modifyQueryUsing(fn ($query) => $query->with(['masterKendaraan', 'pegawai']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['masterKendaraan', 'warnaKendaraan', 'pegawai']))
             ->columns(KendaraanDinasTable::columns(withInstansi: false))
             ->recordActions([
                 Action::make('lihat')

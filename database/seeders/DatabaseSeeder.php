@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminUserSeeder::class,
             InstansiSeeder::class,
+            WarnaKendaraanSeeder::class,
         ]);
 
         // Data dummy hanya untuk pengembangan lokal.

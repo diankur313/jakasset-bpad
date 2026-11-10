@@ -84,8 +84,9 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 |------|-----|--------|------------|
 | Pegawai | `/admin/pegawai` | CRUD | Form: Nama, NIP (18 digit, unik), Jabatan, Golongan (I/a s.d. IV/e) |
 | Perangkat Daerah | `/admin/perangkat-daerah` | **Hanya lihat** | Sumber data: Master Data > Instansi Pemilik. Halaman detail menampilkan daftar kendaraan dinas milik perangkat daerah tersebut. |
-| **Asset** > Kendaraan Dinas | `/admin/asset/kendaraan-dinas` | CRUD (data transaksi) | Nomor Asset dibuat otomatis di backend (tidak ada di form). Form: Nomor Polisi, Merek, Tipe / Model, Tahun Produksi, Warna Kendaraan, Kondisi, Status, Perangkat Daerah (pemilik), Pemegang (pegawai) |
+| **Asset** > Kendaraan Dinas | `/admin/asset/kendaraan-dinas` | CRUD (data transaksi) | Nomor Asset dibuat otomatis di backend (tidak ada di form). Form: Nomor Polisi, Merek, Tipe / Model, Tahun Produksi, Warna Kendaraan (dropdown dari master), Kondisi, Status, Perangkat Daerah (pemilik), Pemegang (pegawai) |
 | **Master Data** > Kendaraan | `/admin/master-data/kendaraan` | CRUD | Form: Merek, Tipe / Model, Tahun Produksi, Kondisi, Status. Kombinasi Merek + Tipe + Tahun harus unik. |
+| **Master Data** > Warna Kendaraan | `/admin/master-data/warna-kendaraan` | CRUD | Form: Nama Warna (unik, otomatis dirapikan ke Title Case), Contoh Warna (kode hex, opsional) |
 | **Master Data** > Instansi Pemilik | `/admin/master-data/instansi` | CRUD | Form: Nama Instansi (unik), Singkatan, Alamat |
 
 ### Pilihan (enum)
@@ -98,6 +99,7 @@ Urutan menu di sidebar (Filament selalu menaruh menu tanpa grup di atas grup):
 ### Alur data transaksi Kendaraan Dinas
 - **Merek → Tipe / Model → Tahun Produksi** adalah dropdown berjenjang dari Master Data > Kendaraan. Yang disimpan hanya `master_kendaraan_id`.
 - Saat Tahun Produksi dipilih, **Kondisi** dan **Status** otomatis terisi dari master, tetapi masih bisa diubah per kendaraan.
+- **Warna Kendaraan** (wajib) dipilih dari Master Data > Warna Kendaraan, bukan diketik bebas, supaya penulisan warna seragam.
 - **Perangkat Daerah** (wajib) diambil dari tabel `instansi`. **Pemegang** (opsional) diambil dari Pegawai.
 - Nomor polisi otomatis diubah ke huruf besar dan divalidasi formatnya (contoh `B 1234 ABC`).
 
@@ -118,6 +120,7 @@ Semua tombol hapus memakai `app/Filament/Support/DependencyGuard.php`:
 | Master Kendaraan | Kendaraan Dinas |
 | Instansi Pemilik | Kendaraan Dinas |
 | Pegawai | Kendaraan Dinas (sebagai pemegang) |
+| Warna Kendaraan | Kendaraan Dinas |
 | Kendaraan Dinas | Tidak ada (konfirmasi biasa) |
 
 ## 5. Struktur Database
@@ -127,9 +130,10 @@ instansi           id, nama (unik), singkatan, alamat, timestamps
 master_kendaraan   id, merek, tipe_model, tahun_produksi, kondisi, status, timestamps
                    unik: (merek, tipe_model, tahun_produksi)
 pegawai            id, nama, nip (unik, 18), jabatan, golongan, timestamps
+warna_kendaraan    id, nama (unik), kode_hex (nullable), timestamps
 kendaraan_dinas    id, nomor_asset (unik, otomatis), nomor_polisi (unik),
                    master_kendaraan_id → master_kendaraan,
-                   warna, kondisi, status, instansi_id → instansi,
+                   warna_kendaraan_id → warna_kendaraan, kondisi, status, instansi_id → instansi,
                    pegawai_id → pegawai (nullable), timestamps
                    semua foreign key: ON DELETE RESTRICT
 nomor_asset_sequences
@@ -143,6 +147,7 @@ nomor_asset_sequences
 |--------|-----|------------------|
 | `AdminUserSeeder` | Akun admin dari `ADMIN_*` di `.env` | Selalu |
 | `InstansiSeeder` | Dinas Pendidikan, Dinas Kesehatan, Dinas Pekerjaan Umum dan Penataan Ruang (PUPR) | Selalu |
+| `WarnaKendaraanSeeder` | 12 warna standar: Hitam, Putih, Silver, Abu-Abu, Merah, Merah Marun, Biru, Biru Dongker, Hijau, Kuning, Oranye, Coklat | Selalu |
 | `PegawaiSeeder` | 10 pegawai dummy (NIP 18 digit, golongan II/a s.d. IV/b) | Hanya `APP_ENV=local` |
 | `MasterKendaraanSeeder` | 10 master kendaraan dummy (Toyota, Mitsubishi, Suzuki, Daihatsu, Isuzu, Honda) dengan kondisi & status bervariasi | Hanya `APP_ENV=local` |
 
@@ -158,11 +163,12 @@ app/
 │   │   ├── KendaraanDinas/                 # Asset > Kendaraan Dinas
 │   │   ├── Pegawai/
 │   │   ├── MasterKendaraan/                # Master Data > Kendaraan
+│   │   ├── WarnaKendaraan/                 # Master Data > Warna Kendaraan
 │   │   ├── Instansi/                       # Master Data > Instansi Pemilik
 │   │   └── PerangkatDaerah/                # read-only, model Instansi
 │   └── Support/DependencyGuard.php         # aksi hapus + cek dependensi
 ├── Support/NomorAsset.php                  # generator nomor asset (AV-001)
-├── Models/                                 # User, Instansi, MasterKendaraan, Pegawai, KendaraanDinas
+├── Models/                                 # User, Instansi, MasterKendaraan, WarnaKendaraan, Pegawai, KendaraanDinas
 └── Providers/Filament/AdminPanelProvider.php
 database/
 ├── database.sqlite
@@ -171,6 +177,7 @@ database/
     ├── DatabaseSeeder.php
     ├── AdminUserSeeder.php
     ├── InstansiSeeder.php
+    ├── WarnaKendaraanSeeder.php
     ├── PegawaiSeeder.php                   # dummy, hanya local
     └── MasterKendaraanSeeder.php           # dummy, hanya local
 tests/Feature/AssetCrudTest.php             # test CRUD & alert hapus
@@ -214,3 +221,4 @@ php artisan test
 | 2026-11-10 | **Added Value AV-001:** Nomor Asset otomatis di Kendaraan Dinas (`YYYY-mm-dd/KENDARAAN/0001`), tabel `nomor_asset_sequences`, `APP_TIMEZONE=Asia/Jakarta`, file `ADDED_VALUE.md`, 3 test baru (total 16). | Claude Code (Opus 5.5) |
 | 2026-11-10 | AV-001 Revisi 1: field Nomor Asset dihapus dari form Kendaraan Dinas (tetap dibuat otomatis di backend, tampil di tabel & detail). | Claude Code (Opus 5.5) |
 | 2026-11-10 | Field Status (Active, Inactive, Standby) dicatat sebagai Added Value AV-002 di `ADDED_VALUE.md`. Tidak ada perubahan kode. | Claude Code (Opus 5.5) |
+| 2026-11-10 | Master Data > Warna Kendaraan (tabel `warna_kendaraan`, seeder 12 warna standar). Kolom teks `kendaraan_dinas.warna` diganti FK `warna_kendaraan_id` (`restrictOnDelete`), data lama dipindahkan otomatis oleh migration. 2 test baru (total 18). | Claude Code (Opus 5.5) |

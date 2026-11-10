@@ -19,6 +19,9 @@ use App\Models\KendaraanDinas;
 use App\Models\MasterKendaraan;
 use App\Models\Pegawai;
 use App\Models\User;
+use App\Models\WarnaKendaraan;
+use App\Filament\Resources\WarnaKendaraan\Pages\CreateWarnaKendaraan;
+use App\Filament\Resources\WarnaKendaraan\Pages\ListWarnaKendaraan;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -57,12 +60,17 @@ class AssetCrudTest extends TestCase
         return Pegawai::create(['nama' => 'Budi', 'nip' => $nip, 'jabatan' => 'Kepala Seksi', 'golongan' => 'III/c']);
     }
 
+    private function warna(string $nama = 'Hitam'): WarnaKendaraan
+    {
+        return WarnaKendaraan::firstOrCreate(['nama' => $nama]);
+    }
+
     private function kendaraan(MasterKendaraan $m, Instansi $i, ?Pegawai $p = null, string $nopol = 'B 1234 ABC'): KendaraanDinas
     {
         return KendaraanDinas::create([
             'nomor_polisi' => $nopol,
             'master_kendaraan_id' => $m->id,
-            'warna' => 'Hitam',
+            'warna_kendaraan_id' => $this->warna()->id,
             'kondisi' => KondisiKendaraan::Baik,
             'status' => StatusKendaraan::Active,
             'instansi_id' => $i->id,
@@ -80,6 +88,7 @@ class AssetCrudTest extends TestCase
             '/admin/pegawai', '/admin/pegawai/create',
             '/admin/master-data/kendaraan', '/admin/master-data/kendaraan/create',
             '/admin/master-data/instansi', '/admin/master-data/instansi/create',
+            '/admin/master-data/warna-kendaraan', '/admin/master-data/warna-kendaraan/create',
             '/admin/perangkat-daerah', "/admin/perangkat-daerah/{$i->id}",
         ] as $url) {
             $this->get($url)->assertOk();
@@ -145,7 +154,7 @@ class AssetCrudTest extends TestCase
             ->fillForm(['master_kendaraan_id' => $m->id])
             // kondisi & status otomatis terisi dari master
             ->assertSchemaStateSet(['kondisi' => KondisiKendaraan::RusakRingan, 'status' => StatusKendaraan::Standby])
-            ->fillForm(['nomor_polisi' => 'b 9999 xy', 'warna' => 'Putih', 'instansi_id' => $i->id, 'pegawai_id' => $p->id])
+            ->fillForm(['nomor_polisi' => 'b 9999 xy', 'warna_kendaraan_id' => $this->warna('Putih')->id, 'instansi_id' => $i->id, 'pegawai_id' => $p->id])
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -270,9 +279,10 @@ class AssetCrudTest extends TestCase
         $k->save();
         $this->assertSame($asli, $k->fresh()->nomor_asset);
 
-        $k->update(['nomor_asset' => 'X', 'warna' => 'Merah']);
+        $merah = $this->warna('Merah');
+        $k->update(['nomor_asset' => 'X', 'warna_kendaraan_id' => $merah->id]);
         $this->assertSame($asli, $k->fresh()->nomor_asset);
-        $this->assertSame('Merah', $k->fresh()->warna);
+        $this->assertSame('Merah', $k->fresh()->warnaKendaraan->nama);
 
         Livewire::test(EditKendaraanDinas::class, ['record' => $k->getRouteKey()])
             ->assertFormFieldDoesNotExist('nomor_asset');
@@ -280,6 +290,39 @@ class AssetCrudTest extends TestCase
         // Field juga tidak ada di form tambah.
         Livewire::test(CreateKendaraanDinas::class)
             ->assertFormFieldDoesNotExist('nomor_asset');
+    }
+
+    public function test_warna_kendaraan_dirapikan_dan_unik(): void
+    {
+        Livewire::test(CreateWarnaKendaraan::class)
+            ->fillForm(['nama' => '  biru   dongker ', 'kode_hex' => '#1A237E'])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('warna_kendaraan', ['nama' => 'Biru Dongker']);
+
+        // Penulisan berbeda dari warna yang sama tetap ditolak.
+        Livewire::test(CreateWarnaKendaraan::class)
+            ->fillForm(['nama' => 'BIRU DONGKER'])
+            ->call('create')
+            ->assertHasFormErrors(['nama']);
+    }
+
+    public function test_hapus_warna_yang_dipakai_diblokir(): void
+    {
+        $dipakai = $this->warna('Hitam');
+        $bebas = $this->warna('Kuning');
+        $this->kendaraan($this->master(), $this->instansi());
+
+        Livewire::test(ListWarnaKendaraan::class)
+            ->callAction(TestAction::make('delete')->table($dipakai))
+            ->assertNotified('Data tidak dapat dihapus');
+
+        Livewire::test(ListWarnaKendaraan::class)
+            ->callAction(TestAction::make('delete')->table($bebas));
+
+        $this->assertModelExists($dipakai);
+        $this->assertModelMissing($bebas);
     }
 
     public function test_perangkat_daerah_hanya_lihat(): void

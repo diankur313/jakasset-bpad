@@ -138,3 +138,19 @@ File ini mencatat **instruksi dari pemilik proyek** dan **langkah yang dikerjaka
 2. `ADDED_VALUE.md`: entri AV-002 berisi prompt asli, arti tiap status, spesifikasi, file yang terlibat, dan verifikasi. Tabel daftar Added Value diperbarui.
 3. `README.md`: baris Status di tabel enum ditandai AV-002, riwayat perubahan ditambah.
 4. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.
+
+### 2026-11-10 — Warna Kendaraan menjadi master data
+
+**Instruksi:**
+> Warna kendaraan masukin sebagai entitas dari data master kendaraan, supaya data lebih terjaga kerapihan dan standarisasinya.
+
+**Dikerjakan oleh:** Claude Code (model Claude Opus 5.5, `claude-opus-5-5`)
+
+1. Migration `2026_11_10_100005`: tabel `warna_kendaraan` (nama unik, kode_hex opsional). Kolom teks `kendaraan_dinas.warna` diganti FK `warna_kendaraan_id` (`restrictOnDelete`). Isian teks lama dipindahkan ke master (dirapikan ke Title Case) lalu kolom lama dihapus. Migration bisa di-rollback.
+2. Model `WarnaKendaraan` (mutator merapikan nama ke Title Case dengan spasi tunggal), relasi `KendaraanDinas::warnaKendaraan()`.
+3. Menu baru Master Data > Warna Kendaraan (CRUD, color picker, contoh warna di tabel, hapus memakai `DependencyGuard`). Urutan Master Data: Kendaraan, Warna Kendaraan, Instansi Pemilik.
+4. Kendaraan Dinas: Warna Kendaraan sekarang dropdown dari master (wajib), ditambah filter Warna di tabel.
+5. Validasi unik nama warna membandingkan nama yang sudah dirapikan, jadi "hitam", "HITAM", dan "Hitam" dianggap sama. (Saat test, ditemukan bug: validasi unik bawaan berjalan sebelum nama dirapikan; sudah diperbaiki.)
+6. `WarnaKendaraanSeeder` (selalu dijalankan): 12 warna standar.
+7. 2 test baru (nama warna dirapikan & unik, hapus warna yang dipakai diblokir). `php artisan test`: 18 test lolos. Dicek di browser: menu warna dan dropdown di form Kendaraan Dinas tampil benar.
+8. Bukan prompt "Added Value", jadi tidak dicatat di `ADDED_VALUE.md`. Di-commit dan di-push ke `main` atas permintaan pemilik proyek.

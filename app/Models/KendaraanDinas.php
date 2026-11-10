@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Table('kendaraan_dinas')]
-#[Fillable(['nomor_polisi', 'master_kendaraan_id', 'warna', 'kondisi', 'status', 'instansi_id', 'pegawai_id'])]
+#[Fillable(['nomor_polisi', 'master_kendaraan_id', 'warna_kendaraan_id', 'kondisi', 'status', 'instansi_id', 'pegawai_id'])]
 class KendaraanDinas extends Model
 {
     /** Jenis asset yang dipakai di nomor asset: YYYY-mm-dd/KENDARAAN/0001. */
@@ -52,6 +52,11 @@ class KendaraanDinas extends Model
     public function masterKendaraan(): BelongsTo
     {
         return $this->belongsTo(MasterKendaraan::class);
+    }
+
+    public function warnaKendaraan(): BelongsTo
+    {
+        return $this->belongsTo(WarnaKendaraan::class);
     }
 
     public function instansi(): BelongsTo

@@ -24,7 +24,7 @@ class KendaraanDinasTable
             TextColumn::make('masterKendaraan.merek')->label('Merek')->searchable()->sortable(),
             TextColumn::make('masterKendaraan.tipe_model')->label('Tipe / Model')->searchable(),
             TextColumn::make('masterKendaraan.tahun_produksi')->label('Tahun')->sortable(),
-            TextColumn::make('warna')->label('Warna')->toggleable(),
+            TextColumn::make('warnaKendaraan.nama')->label('Warna')->searchable()->placeholder('-')->toggleable(),
             TextColumn::make('kondisi')->label('Kondisi')->badge()->sortable(),
             TextColumn::make('status')->label('Status')->badge()->sortable(),
             $withInstansi ? TextColumn::make('instansi.nama')->label('Perangkat Daerah')->searchable()->sortable()->wrap() : null,
@@ -35,13 +35,18 @@ class KendaraanDinasTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['masterKendaraan', 'instansi', 'pegawai']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['masterKendaraan', 'warnaKendaraan', 'instansi', 'pegawai']))
             ->defaultSort('created_at', 'desc')
             ->columns(static::columns())
             ->filters([
                 SelectFilter::make('instansi_id')
                     ->label('Perangkat Daerah')
                     ->relationship('instansi', 'nama')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('warna_kendaraan_id')
+                    ->label('Warna')
+                    ->relationship('warnaKendaraan', 'nama')
                     ->searchable()
                     ->preload(),
                 SelectFilter::make('kondisi')->label('Kondisi')->options(KondisiKendaraan::class),

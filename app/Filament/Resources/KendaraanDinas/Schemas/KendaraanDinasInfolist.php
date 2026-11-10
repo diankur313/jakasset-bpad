@@ -21,7 +21,7 @@ class KendaraanDinasInfolist
                         TextEntry::make('masterKendaraan.merek')->label('Merek'),
                         TextEntry::make('masterKendaraan.tipe_model')->label('Tipe / Model'),
                         TextEntry::make('masterKendaraan.tahun_produksi')->label('Tahun Produksi'),
-                        TextEntry::make('warna')->label('Warna Kendaraan'),
+                        TextEntry::make('warnaKendaraan.nama')->label('Warna Kendaraan')->placeholder('-'),
                         TextEntry::make('kondisi')->label('Kondisi')->badge(),
                         TextEntry::make('status')->label('Status')->badge(),
                     ]),

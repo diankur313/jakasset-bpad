@@ -29,7 +29,7 @@ class KendaraanDinasForm
         return $schema
             ->components([
                 Section::make('Data Kendaraan')
-                    ->description('Merek, Tipe / Model, dan Tahun Produksi diambil dari menu Master Data > Kendaraan.')
+                    ->description('Merek, Tipe / Model, dan Tahun Produksi diambil dari Master Data > Kendaraan; Warna dari Master Data > Warna Kendaraan.')
                     ->columns(2)
                     ->columnSpanFull()
                     ->schema([
@@ -100,11 +100,13 @@ class KendaraanDinasForm
                                 $set('status', $master->status);
                             }),
 
-                        TextInput::make('warna')
+                        Select::make('warna_kendaraan_id')
                             ->label('Warna Kendaraan')
+                            ->relationship('warnaKendaraan', 'nama')
+                            ->searchable()
+                            ->preload()
                             ->required()
-                            ->maxLength(50)
-                            ->placeholder('Hitam'),
+                            ->helperText('Warna belum ada? Tambahkan di Master Data > Warna Kendaraan.'),
 
                         Select::make('kondisi')
                             ->label('Kondisi')
